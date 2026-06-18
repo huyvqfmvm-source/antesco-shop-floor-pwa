@@ -1,0 +1,191 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* === Animations === */
+@keyframes scan-line {
+  0% { top: 15%; opacity: 0.2; }
+  50% { top: 85%; opacity: 1; }
+  100% { top: 15%; opacity: 0.2; }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slide-down {
+  from { transform: translateY(-16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+@keyframes voice-wave {
+  0%, 100% { height: 3px; }
+  25% { height: 14px; }
+  50% { height: 5px; }
+  75% { height: 18px; }
+}
+
+@keyframes voice-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes ocr-scan {
+  0% { top: 0%; opacity: 0; }
+  15% { opacity: 0.9; }
+  50% { top: 100%; opacity: 1; }
+  65% { opacity: 0.9; }
+  100% { top: 0%; opacity: 0; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes scale-in {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes badge-pop {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes float-breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(22, 163, 74, 0.15); }
+  50% { box-shadow: 0 0 24px rgba(22, 163, 74, 0.35); }
+}
+
+/* === Animation Classes === */
+.animate-scan-line { animation: scan-line 1.8s ease-in-out infinite; }
+.animate-slide-up { animation: slide-up 0.3s ease-out; }
+.animate-slide-down { animation: slide-down 0.3s ease-out; }
+.animate-fade-in { animation: fade-in 0.3s ease-out; }
+.animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+.animate-shake { animation: shake 0.5s ease-in-out; }
+.animate-voice-wave { animation: voice-wave 0.8s ease-in-out infinite; }
+.animate-voice-pulse { animation: voice-pulse 1.2s ease-in-out infinite; }
+.animate-ocr-scan { animation: ocr-scan 2.5s ease-in-out infinite; }
+.animate-scale-in { animation: scale-in 0.25s ease-out; }
+.animate-badge-pop { animation: badge-pop 0.35s ease-out; }
+.animate-float-breathe { animation: float-breathe 3s ease-in-out infinite; }
+.animate-glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }
+
+.animate-voice-wave:nth-child(2) { animation-delay: 0.1s; }
+.animate-voice-wave:nth-child(3) { animation-delay: 0.2s; }
+.animate-voice-wave:nth-child(4) { animation-delay: 0.15s; }
+.animate-voice-wave:nth-child(5) { animation-delay: 0.25s; }
+
+/* === Shimmer skeleton === */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* === Base Input Field === */
+@layer base {
+  .input-field {
+    @apply w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-ant-bg text-sm text-ant-text placeholder:text-ant-text-secondary focus:outline-none focus:border-ant-sx focus:ring-2 focus:ring-ant-sx/20 transition-all;
+  }
+
+  .input-field-lg {
+    @apply w-full h-14 px-4 rounded-xl border border-gray-200 bg-ant-bg text-base text-ant-text placeholder:text-ant-text-secondary focus:outline-none focus:border-ant-sx focus:ring-2 focus:ring-ant-sx/20 transition-all;
+  }
+}
+
+/* === Safe Area for bottom nav === */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 4px);
+}
+
+/* === Custom Scrollbar === */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 999px;
+}
+
+/* === Page transition === */
+.page-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+
+/* === Active press effect === */
+.press-effect:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease-out;
+}
+
+/* === Card hover lift === */
+.card-hover {
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+.card-hover:active {
+  transform: scale(0.98);
+}
+
+/* === Pulse ring for floating action button === */
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+.animate-pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: inherit;
+  opacity: 0.3;
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  z-index: -1;
+}
+
+/* === Glass morphism utility === */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.glass-dark {
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}

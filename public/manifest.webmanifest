@@ -1,0 +1,40 @@
+{
+  "name": "ANTESCO Shop Floor & Warehouse",
+  "short_name": "ANTESCO",
+  "description": "PWA vận hành phân xưởng, nhập kho, xuất kho, QM và offline queue cho ANTESCO.",
+  "start_url": "/home",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#2563EB",
+  "background_color": "#F6F8FA",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quét mã",
+      "short_name": "Scan",
+      "url": "/home?scan=1",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Putaway",
+      "short_name": "Putaway",
+      "url": "/inbound/putaway",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "FEFO Picking",
+      "short_name": "FEFO",
+      "url": "/outbound/fefo-picking/OD-2026-0098",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}
