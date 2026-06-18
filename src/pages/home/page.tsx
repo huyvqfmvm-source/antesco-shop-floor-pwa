@@ -374,17 +374,17 @@ export default function HomePage() {
                   <h3 className="text-xs font-bold text-ant-text-secondary uppercase tracking-wider mb-2.5">Sẵn sàng xuất hóa đơn mock</h3>
                   <div className="space-y-1.5">
                     {state.outboundDeliveries.filter((o) => o.status === 'Đã xuất bến').map((od) => (
-                      <Link key={od.id} to={`/outbound/container-loading/${od.id}`} className="flex items-center justify-between bg-ant-card rounded-xl border border-ant-sx/20 px-4 py-3 active:scale-[0.98] transition-all">
-                        <div className="flex items-center gap-3 min-w-0">
+                      <Link key={od.id} to={`/outbound/container-loading/${od.id}`} className="flex items-center gap-3 bg-ant-card rounded-2xl border border-ant-sx/20 px-4 py-3 active:scale-[0.98] transition-all">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div className="w-9 h-9 rounded-lg bg-ant-sx/10 flex items-center justify-center shrink-0">
                             <i className="ri-bill-line text-ant-sx text-sm" />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-sm font-bold text-ant-text">{od.id}</p>
-                            <p className="text-xs text-ant-text-secondary">{od.customer} · Container {od.container} · Seal {od.seal}</p>
+                            <p className="text-xs text-ant-text-secondary truncate">{od.customer} · Container {od.container} · Seal {od.seal}</p>
                           </div>
                         </div>
-                        <span className="text-xs font-bold text-ant-sx px-2 py-1 rounded-full bg-ant-sx/10">Xuất hóa đơn</span>
+                        <span className="h-9 px-3 rounded-xl bg-ant-sx/10 text-ant-sx text-xxs font-bold inline-flex items-center justify-center whitespace-nowrap shrink-0">Xuất hóa đơn</span>
                       </Link>
                     ))}
                   </div>
@@ -501,15 +501,17 @@ export default function HomePage() {
 
 function SummaryCard({ icon, color, label, value, sub, highlight }: { icon: string; color: string; label: string; value: number; sub: string; highlight?: boolean }) {
   return (
-    <div className={`bg-ant-card rounded-xl border p-3.5 cursor-default ${highlight ? 'border-ant-warning/30 bg-ant-warning/5' : 'border-gray-100'}`}>
-      <div className="flex items-center gap-2 mb-2">
-        <div className={`w-7 h-7 rounded-lg bg-${color === 'warning' ? 'ant-warning' : color === 'error' ? 'ant-error' : color === 'offline' ? 'ant-offline' : color === 'sync' ? 'ant-sync' : color === 'qm' ? 'ant-qm' : `ant-${color}`}/10 flex items-center justify-center`}>
+    <div className={`bg-ant-card rounded-2xl border p-4 min-h-[126px] cursor-default flex flex-col justify-between ${highlight ? 'border-ant-warning/30 bg-ant-warning/5' : 'border-gray-100'}`}>
+      <div className="flex items-start gap-2.5">
+        <div className={`w-8 h-8 rounded-xl bg-${color === 'warning' ? 'ant-warning' : color === 'error' ? 'ant-error' : color === 'offline' ? 'ant-offline' : color === 'sync' ? 'ant-sync' : color === 'qm' ? 'ant-qm' : `ant-${color}`}/10 flex items-center justify-center shrink-0`}>
           <i className={`${icon} text-${color === 'warning' ? 'ant-warning' : color === 'error' ? 'ant-error' : color === 'offline' ? 'ant-offline' : color === 'sync' ? 'ant-sync' : color === 'qm' ? 'ant-qm' : `ant-${color}`} text-xs`} />
         </div>
-        <span className="text-xxs text-ant-text-secondary truncate font-medium">{label}</span>
+        <span className="text-xs text-ant-text-secondary font-semibold leading-snug line-clamp-2 min-h-[30px]">{label}</span>
       </div>
-      <p className={`text-2xl font-bold ${highlight ? 'text-ant-warning' : 'text-ant-text'}`}>{value}</p>
-      <p className="text-xxs text-ant-text-secondary mt-0.5">{sub}</p>
+      <div>
+        <p className={`text-2xl font-bold leading-none ${highlight ? 'text-ant-warning' : 'text-ant-text'}`}>{value}</p>
+        <p className="text-xxs text-ant-text-secondary mt-2 leading-snug line-clamp-2">{sub}</p>
+      </div>
     </div>
   );
 }
@@ -518,11 +520,11 @@ function QuickBtn({ icon, color, label, onClick }: { icon: string; color: string
   const colorMap: Record<string, string> = { sx: 'ant-sx', nk: 'ant-nk', xk: 'ant-xk', qm: 'ant-qm', error: 'ant-error', offline: 'ant-offline', warning: 'ant-warning' };
   const c = colorMap[color] || 'ant-sx';
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-ant-card border border-gray-100 min-w-[80px] active:scale-95 transition-all hover:border-gray-200 cursor-pointer shrink-0">
+    <button onClick={onClick} className="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl bg-ant-card border border-gray-100 min-w-[92px] h-[98px] active:scale-95 transition-all hover:border-gray-200 cursor-pointer shrink-0">
       <div className={`w-10 h-10 rounded-xl bg-${c}/10 flex items-center justify-center`}>
         <i className={`${icon} text-${c} text-lg`} />
       </div>
-      <span className="text-xxs font-semibold text-ant-text text-center leading-tight whitespace-nowrap">{label}</span>
+      <span className="text-xxs font-semibold text-ant-text text-center leading-tight line-clamp-2">{label}</span>
     </button>
   );
 }

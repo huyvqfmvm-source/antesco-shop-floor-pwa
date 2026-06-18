@@ -79,32 +79,34 @@ export default function ProductionPage() {
       <main className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="p-4 space-y-4">
           {/* Status Summary Chips */}
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
             <button
               onClick={() => setStatusFilter('')}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                statusFilter === '' ? 'bg-ant-sx text-white' : 'bg-gray-100 text-ant-text-secondary hover:bg-gray-200'
+              className={`h-10 px-3.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 inline-flex items-center justify-center gap-1.5 transition-all ${
+                statusFilter === '' ? 'bg-ant-sx text-white shadow-sm shadow-ant-sx/20' : 'bg-white border border-gray-100 text-ant-text-secondary hover:bg-gray-50'
               }`}
             >
-              Tất cả ({state.productionOrders.length})
+              <span>Tất cả</span>
+              <span className={`min-w-5 h-5 px-1 rounded-full inline-flex items-center justify-center text-xxs ${statusFilter === '' ? 'bg-white/20 text-white' : 'bg-gray-100 text-ant-text-secondary'}`}>{state.productionOrders.length}</span>
             </button>
             {STATUS_FILTERS.filter((f) => f.value).map((f) => (
               <button
                 key={f.value}
                 onClick={() => setStatusFilter(statusFilter === f.value ? '' : f.value)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                className={`h-10 px-3.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 inline-flex items-center justify-center gap-1.5 border transition-all ${
                   statusFilter === f.value
-                    ? `${PO_STATUS_CONFIG[f.value]?.bg || 'bg-gray-100'} ${PO_STATUS_CONFIG[f.value]?.color || 'text-ant-text'} ring-1 ring-inset ${PO_STATUS_CONFIG[f.value]?.color?.replace('text-', 'ring-')}/30`
-                    : 'bg-gray-100 text-ant-text-secondary hover:bg-gray-200'
+                    ? `${PO_STATUS_CONFIG[f.value]?.bg || 'bg-gray-100'} ${PO_STATUS_CONFIG[f.value]?.color || 'text-ant-text'} border-gray-200`
+                    : 'bg-white border-gray-100 text-ant-text-secondary hover:bg-gray-50'
                 }`}
               >
-                {f.label} ({statusCounts[f.value] || 0})
+                <span>{f.label}</span>
+                <span className="min-w-5 h-5 px-1 rounded-full bg-gray-100/80 text-ant-text-secondary inline-flex items-center justify-center text-xxs">{statusCounts[f.value] || 0}</span>
               </button>
             ))}
           </div>
 
           {/* Search + Plant Filter */}
-          <div className="flex gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_128px] gap-2">
             <div className="relative flex-1">
               <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ant-text-secondary" />
               <input
@@ -112,13 +114,13 @@ export default function ProductionPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm PO, sản phẩm, batch..."
-                className="w-full h-10 rounded-xl border border-gray-200 pl-9 pr-4 text-sm text-ant-text bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ant-sx/20 focus:border-ant-sx"
+                className="w-full h-12 rounded-2xl border border-gray-200 pl-9 pr-3 text-sm text-ant-text bg-white focus:outline-none focus:ring-2 focus:ring-ant-sx/20 focus:border-ant-sx"
               />
             </div>
             <select
               value={plantFilter}
               onChange={(e) => setPlantFilter(e.target.value)}
-              className="h-10 rounded-xl border border-gray-200 px-3 text-sm text-ant-text bg-gray-50 focus:outline-none focus:ring-2 focus:ring-ant-sx/20"
+              className="h-12 min-w-0 rounded-2xl border border-gray-200 px-3 text-sm text-ant-text bg-white focus:outline-none focus:ring-2 focus:ring-ant-sx/20"
             >
               {PLANT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -131,19 +133,19 @@ export default function ProductionPage() {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xxs text-ant-text-secondary">Bộ lọc:</span>
               {statusFilter && (
-                <span className={`text-xxs px-2 py-0.5 rounded-full font-medium ${PO_STATUS_CONFIG[statusFilter]?.bg} ${PO_STATUS_CONFIG[statusFilter]?.color}`}>
+                <span className={`h-8 px-2.5 rounded-xl inline-flex items-center gap-1 text-xxs font-bold whitespace-nowrap ${PO_STATUS_CONFIG[statusFilter]?.bg} ${PO_STATUS_CONFIG[statusFilter]?.color}`}>
                   {PO_STATUS_CONFIG[statusFilter]?.label}
                   <button onClick={() => setStatusFilter('')} className="ml-1"><i className="ri-close-line" /></button>
                 </span>
               )}
               {plantFilter && (
-                <span className="text-xxs px-2 py-0.5 rounded-full bg-ant-qm/10 text-ant-qm font-medium">
+                <span className="h-8 px-2.5 rounded-xl inline-flex items-center gap-1 text-xxs font-bold whitespace-nowrap bg-ant-qm/10 text-ant-qm">
                   {plantFilter === 'MA' ? 'Mỹ An' : 'Bình Khánh'}
                   <button onClick={() => setPlantFilter('')} className="ml-1"><i className="ri-close-line" /></button>
                 </span>
               )}
               {searchQuery && (
-                <span className="text-xxs px-2 py-0.5 rounded-full bg-ant-nk/10 text-ant-nk font-medium">
+                <span className="h-8 px-2.5 rounded-xl inline-flex items-center gap-1 text-xxs font-bold whitespace-nowrap bg-ant-nk/10 text-ant-nk">
                   &ldquo;{searchQuery}&rdquo;
                   <button onClick={() => setSearchQuery('')} className="ml-1"><i className="ri-close-line" /></button>
                 </span>
@@ -162,7 +164,7 @@ export default function ProductionPage() {
             {canCreateOrder && (
               <button
                 onClick={() => navigate('/production/detail/10000456')}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ant-sx/10 text-ant-sx text-xs font-bold hover:bg-ant-sx/20 transition-all shrink-0 active:scale-[0.98]"
+                className="h-11 flex items-center gap-2 px-4 rounded-2xl bg-ant-sx/10 text-ant-sx text-xs font-bold hover:bg-ant-sx/20 transition-all shrink-0 active:scale-[0.98]"
               >
                 <div className="w-5 h-5 flex items-center justify-center">
                   <i className="ri-add-line text-sm" />
@@ -172,7 +174,7 @@ export default function ProductionPage() {
             )}
             <button
               onClick={() => navigate('/production/utility')}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ant-offline/10 text-ant-offline text-xs font-bold hover:bg-ant-offline/20 transition-all shrink-0 active:scale-[0.98]"
+              className="h-11 flex items-center gap-2 px-4 rounded-2xl bg-ant-offline/10 text-ant-offline text-xs font-bold hover:bg-ant-offline/20 transition-all shrink-0 active:scale-[0.98]"
             >
               <div className="w-5 h-5 flex items-center justify-center">
                 <i className="ri-plug-line text-sm" />

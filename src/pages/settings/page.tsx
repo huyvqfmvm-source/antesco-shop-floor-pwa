@@ -178,31 +178,33 @@ export default function SettingsPage() {
             </div>
 
             <div className="p-4 space-y-4">
-              <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
-                {state.registeredUsers.map((user) => {
-                  const role = MOCK_ROLES.find((r) => r.id === user.role);
-                  const active = user.username === selectedUser;
-                  return (
-                    <button
-                      key={user.username}
-                      onClick={() => handleSelectAdminUser(user.username)}
-                      className={`min-w-[180px] text-left rounded-xl border p-3 transition-all active:scale-[0.98] ${
-                        active ? 'bg-ant-nk/10 border-ant-nk/30' : 'bg-ant-bg border-transparent hover:border-gray-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${active ? 'bg-ant-nk text-white' : 'bg-white text-ant-text'}`}>
-                          <span className="text-xs font-bold">{getInitChar(user.name)}</span>
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-ant-text truncate">{user.name}</p>
-                          <p className="text-xxs text-ant-text-secondary truncate">{user.employeeCode} · {user.plant}</p>
-                        </div>
-                      </div>
-                      <p className={`text-xxs font-bold ${active ? 'text-ant-nk' : 'text-ant-text-secondary'}`}>{role?.name || user.role}</p>
-                    </button>
-                  );
-                })}
+              <div className="grid grid-cols-1 gap-3">
+                <label className="block">
+                  <span className="text-xxs font-bold text-ant-text-secondary uppercase">Chọn nhân sự</span>
+                  <select
+                    value={selectedUser}
+                    onChange={(e) => handleSelectAdminUser(e.target.value)}
+                    className="mt-1 w-full h-12 rounded-2xl border border-gray-200 bg-white px-3 text-sm font-bold text-ant-text outline-none focus:border-ant-nk focus:ring-2 focus:ring-ant-nk/15"
+                  >
+                    {state.registeredUsers.map((user) => {
+                      const role = MOCK_ROLES.find((r) => r.id === user.role);
+                      return <option key={user.username} value={user.username}>{user.name} · {user.employeeCode} · {role?.name || user.role}</option>;
+                    })}
+                  </select>
+                </label>
+
+                <div className="rounded-2xl border border-ant-nk/15 bg-ant-nk/5 p-3 flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-ant-nk text-white flex items-center justify-center shrink-0">
+                    <span className="text-base font-bold">{getInitChar(adminSelectedUser.name)}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-ant-text truncate">{adminSelectedUser.name}</p>
+                    <p className="text-xs text-ant-text-secondary truncate">{adminSelectedUser.employeeCode} · {adminSelectedUser.username}</p>
+                  </div>
+                  <span className="h-8 px-3 rounded-xl bg-white text-ant-nk text-xxs font-bold inline-flex items-center whitespace-nowrap">
+                    {MOCK_ROLES.find((r) => r.id === adminSelectedUser.role)?.name || adminSelectedUser.role}
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
@@ -260,14 +262,14 @@ export default function SettingsPage() {
           <p className="text-xs text-ant-text-secondary mb-4">Chọn vai trò để xem phạm vi màn hình & quyền thao tác</p>
 
           {/* Role selector */}
-          <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 custom-scrollbar">
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-4 custom-scrollbar">
             {MOCK_ROLES.map((role) => (
               <button
                 key={role.id}
                 onClick={() => setRbacRole(role.id)}
-                className={`px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                className={`h-10 px-3.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 inline-flex items-center justify-center transition-all ${
                   rbacRole === role.id
-                    ? 'bg-ant-qm text-white'
+                    ? 'bg-ant-qm text-white shadow-sm shadow-ant-qm/20'
                     : 'bg-gray-100 text-ant-text-secondary hover:bg-gray-200'
                 }`}
               >
@@ -306,17 +308,17 @@ export default function SettingsPage() {
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {canOperate.map((a) => (
-                        <span key={a} className="text-xxs px-2 py-1 rounded-full bg-ant-sx/10 text-ant-sx font-medium border border-ant-sx/20">
+                        <span key={a} className="min-h-8 px-2.5 py-1 rounded-xl bg-ant-sx/10 text-ant-sx text-xxs font-bold border border-ant-sx/20 inline-flex items-center whitespace-nowrap">
                           {PERMISSION_LABELS[a] || a}
                         </span>
                       ))}
                       {viewOnly.map((a) => (
-                        <span key={a} className="text-xxs px-2 py-1 rounded-full bg-ant-nk/10 text-ant-nk font-medium border border-ant-nk/20">
+                        <span key={a} className="min-h-8 px-2.5 py-1 rounded-xl bg-ant-nk/10 text-ant-nk text-xxs font-bold border border-ant-nk/20 inline-flex items-center whitespace-nowrap">
                           {PERMISSION_LABELS[a] || a}
                         </span>
                       ))}
                       {blocked.map((a) => (
-                        <span key={a} className="text-xxs px-2 py-1 rounded-full bg-gray-100 text-ant-text-secondary/50 line-through">
+                        <span key={a} className="min-h-8 px-2.5 py-1 rounded-xl bg-gray-100 text-ant-text-secondary/50 text-xxs font-bold line-through inline-flex items-center whitespace-nowrap">
                           {PERMISSION_LABELS[a] || a}
                         </span>
                       ))}

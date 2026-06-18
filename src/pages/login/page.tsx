@@ -71,13 +71,13 @@ export default function LoginPage() {
   return (
     <div className="flex justify-center min-h-screen bg-ant-bg">
       <div className="w-full max-w-mobile flex flex-col min-h-screen">
-        <div className="absolute top-0 left-0 right-0 h-56 bg-gradient-to-b from-ant-sx/5 via-ant-sx/[0.02] to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-0 right-0 h-52 bg-gradient-to-b from-ant-sx/5 via-ant-sx/[0.02] to-transparent pointer-events-none" />
 
-        <div className="flex-1 flex flex-col justify-center px-6 relative z-10">
+        <div className="flex-1 flex flex-col justify-center px-5 py-8 relative z-10">
           {/* Logo & Brand */}
-          <div className="text-center mb-10">
-            <div className="w-20 h-20 mx-auto bg-ant-sx rounded-2xl flex items-center justify-center mb-5 shadow-lg shadow-ant-sx/20">
-              <i className="ri-building-2-line text-white text-3xl" />
+          <div className="text-center mb-8">
+            <div className="w-[72px] h-[72px] mx-auto bg-ant-sx rounded-2xl flex items-center justify-center mb-5 shadow-lg shadow-ant-sx/20">
+              <i className="ri-building-2-line text-white text-2xl" />
             </div>
             <h1 className="text-2xl font-bold text-ant-text tracking-tight">ANTESCO</h1>
             <p className="text-sm text-ant-text-secondary mt-1 font-medium">Shop Floor &amp; Warehouse</p>
@@ -85,7 +85,7 @@ export default function LoginPage() {
           </div>
 
           {/* Login Card */}
-          <div className="bg-ant-card rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-ant-card rounded-[22px] p-5 shadow-sm border border-gray-100">
             <form onSubmit={handleLogin}>
               {/* Username */}
               <div className="mb-4">
@@ -102,7 +102,7 @@ export default function LoginPage() {
                     onChange={(e) => { setUsername(e.target.value); setError(''); }}
                     placeholder="Nhập tên đăng nhập"
                     autoComplete="username"
-                    className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 bg-ant-bg text-ant-text text-sm placeholder:text-ant-text-secondary focus:outline-none focus:border-ant-sx focus:ring-2 focus:ring-ant-sx/20 transition-all"
+                    className="w-full h-[54px] pl-11 pr-4 rounded-2xl border border-gray-200 bg-ant-bg text-ant-text text-sm placeholder:text-ant-text-secondary focus:outline-none focus:border-ant-sx focus:ring-2 focus:ring-ant-sx/20 transition-all"
                   />
                 </div>
               </div>
@@ -122,12 +122,12 @@ export default function LoginPage() {
                     onChange={(e) => { setPassword(e.target.value); setError(''); }}
                     placeholder="Nhập mật khẩu"
                     autoComplete="current-password"
-                    className="w-full h-12 pl-10 pr-12 rounded-xl border border-gray-200 bg-ant-bg text-ant-text text-sm placeholder:text-ant-text-secondary focus:outline-none focus:border-ant-sx focus:ring-2 focus:ring-ant-sx/20 transition-all"
+                    className="w-full h-[54px] pl-11 pr-14 rounded-2xl border border-gray-200 bg-ant-bg text-ant-text text-sm placeholder:text-ant-text-secondary focus:outline-none focus:border-ant-sx focus:ring-2 focus:ring-ant-sx/20 transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center cursor-pointer"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer hover:bg-white/70 active:scale-95 transition-all"
                   >
                     <i className={`${showPassword ? 'ri-eye-off-line' : 'ri-eye-line'} text-ant-text-secondary text-lg hover:text-ant-text transition-colors`} />
                   </button>
@@ -166,7 +166,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 rounded-xl bg-ant-sx text-white text-sm font-bold hover:bg-ant-sx-dark active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+                className="w-full h-12 rounded-2xl bg-ant-sx text-white text-sm font-bold hover:bg-ant-sx-dark active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer shadow-sm shadow-ant-sx/20"
               >
                 {isLoading ? (
                   <>
