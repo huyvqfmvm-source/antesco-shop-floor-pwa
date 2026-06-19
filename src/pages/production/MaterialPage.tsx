@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useApp } from '@/store/AppContext';
+import { useApp, hasPermission, getPermissionExplanation } from '@/store/AppContext';
 import { MOCK_BOM_PO_10000456 } from '@/mocks/data';
+import PermissionBanner from '@/components/base/PermissionBanner';
 import type { BomItem } from '@/store/AppContext';
 
 type ScanStatus = 'pending' | 'scanned' | 'shortage' | 'wrong_lot' | 'qc_hold';
@@ -33,25 +34,22 @@ export default function ProductionMaterialPage() {
   const [scanningIndex, setScanningIndex] = useState<number | null>(null);
   const [confirming, setConfirming] = useState(false);
 
+  const canMaterial = hasPermission(state.role?.id, 'PRODUCTION_MATERIAL') || hasPermission(state.role?.id, 'PRODUCTION_CREATE_ORDER');
+
   const handleScanLine = useCallback((index: number) => {
     setScanningIndex(index);
     const line = lines[index];
 
     setTimeout(() => {
       const newLines = [...lines];
-      // Simulate different results
       const rand = Math.random();
       if (rand < 0.7) {
-        // Success
         newLines[index] = { ...line, status: 'scanned', actualLot: line.item.requiredLot };
       } else if (rand < 0.85) {
-        // Wrong lot - FEFO warning
         newLines[index] = { ...line, status: 'wrong_lot', actualLot: '002210025' };
       } else if (rand < 0.95) {
-        // QC hold
         newLines[index] = { ...line, status: 'qc_hold', actualLot: line.item.requiredLot };
       } else {
-        // Shortage
         newLines[index] = { ...line, status: 'shortage', actualLot: line.item.requiredLot };
       }
       setLines(newLines);
@@ -60,6 +58,10 @@ export default function ProductionMaterialPage() {
   }, [lines]);
 
   const handleConfirm = () => {
+    if (!canMaterial) {
+      addToast('error', 'Bạn không có quyền thực hiện thao tác này.');
+      return;
+    }
     const hasErrors = lines.some((l) => l.status === 'wrong_lot' || l.status === 'qc_hold');
     if (hasErrors) {
       addToast('error', 'Có dòng vật tư bị sai lô hoặc khóa QC. Vui lòng kiểm tra lại trước khi xác nhận.');
@@ -109,6 +111,13 @@ export default function ProductionMaterialPage() {
           )}
         </div>
       </div>
+
+      <PermissionBanner
+        module="Sản xuất — Cấp phát Vật tư"
+        moduleIcon="ri-archive-line"
+        moduleColor="sx"
+        requiredPermissions={['PRODUCTION_MATERIAL', 'PRODUCTION_VIEW']}
+      />
 
       {/* BOM List */}
       <div>
@@ -214,29 +223,35 @@ export default function ProductionMaterialPage() {
       </div>
 
       {/* Confirm button */}
-      <button
-        onClick={handleConfirm}
-        disabled={confirming || scannedCount === 0}
-        className={`w-full px-4 py-4 rounded-xl text-white text-base font-bold flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${
-          confirming || scannedCount === 0
-            ? 'bg-gray-300 cursor-not-allowed'
-            : 'bg-ant-sx hover:bg-ant-sx-dark'
-        }`}
-      >
-        {confirming ? (
-          <>
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Đang xác nhận...
-          </>
-        ) : (
-          <>
-            <div className="w-6 h-6 flex items-center justify-center">
-              <i className="ri-check-double-line text-lg" />
-            </div>
-            Xác nhận cấp vật tư
-          </>
-        )}
-      </button>
+      {canMaterial ? (
+        <button
+          onClick={handleConfirm}
+          disabled={confirming || scannedCount === 0}
+          className={`w-full px-4 py-4 rounded-xl text-white text-base font-bold flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${
+            confirming || scannedCount === 0
+              ? 'bg-gray-300 cursor-not-allowed'
+              : 'bg-ant-sx hover:bg-ant-sx-dark'
+          }`}
+        >
+          {confirming ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Đang xác nhận...
+            </>
+          ) : (
+            <>
+              <div className="w-6 h-6 flex items-center justify-center">
+                <i className="ri-check-double-line text-lg" />
+              </div>
+              Xác nhận cấp vật tư
+            </>
+          )}
+        </button>
+      ) : (
+        <div className="bg-ant-warning/10 rounded-xl p-4 border border-ant-warning/20">
+          <p className="text-xs text-ant-warning font-medium">{getPermissionExplanation('PRODUCTION_MATERIAL')}</p>
+        </div>
+      )}
 
       <div className="h-4" />
     </div>

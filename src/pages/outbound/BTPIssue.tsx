@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/store/AppContext';
+import { useApp, hasPermission, getPermissionExplanation } from '@/store/AppContext';
+import PermissionBanner from '@/components/base/PermissionBanner';
 
 type BtpStep = 'select' | 'scan_pallet' | 'scan_bin' | 'confirm';
 
@@ -30,7 +31,8 @@ export default function BTPIssuePage() {
   const [scannedBinOk, setScannedBinOk] = useState(false);
   const [selectedLine, setSelectedLine] = useState('');
 
-  // BTP pallet data - dynamically from store
+  const canIssueBtp = hasPermission(state.role?.id, 'OUTBOUND_BTP_ISSUE');
+
   const btpPallet = state.handlingUnits.find((h) => h.type === 'BTP' && h.plant === (state.plant?.code || 'MA') && h.status === 'Chờ chế biến');
   const btpBin = btpPallet?.location || 'KM-01-A2';
   const relatedPO = btpPallet
@@ -66,6 +68,10 @@ export default function BTPIssuePage() {
   };
 
   const handleConfirmIssue = () => {
+    if (!canIssueBtp) {
+      addToast('error', 'Bạn không có quyền thực hiện thao tác này.');
+      return;
+    }
     const line = productionLines.find((l) => l.id === (selectedLine || relatedLine));
     const remaining = currentBtpStock - issueQty;
 
@@ -74,7 +80,6 @@ export default function BTPIssuePage() {
       `Pallet ${btpPallet?.id || ''} → ${line?.name || 'Chuyền cắt xí ngầu'} · ${issueQty.toLocaleString()} KG`,
       `Đã xuất BTP cho chuyền — Tồn BTP còn ${remaining.toLocaleString()} KG`,
       () => {
-        // Update BTP stock
         dispatch({
           type: 'UPDATE_HANDLING_UNIT',
           payload: {
@@ -82,7 +87,6 @@ export default function BTPIssuePage() {
             updates: { qty: remaining, status: remaining <= 0 ? 'Đã xuất hết' : 'Chờ chế biến' },
           },
         });
-        // Update WIP for the target PO (chuyền cắt xí ngầu)
         if (relatedPO) {
           const newWip = (relatedPO.wipQty || 0) + issueQty;
           dispatch({
@@ -149,12 +153,19 @@ export default function BTPIssuePage() {
         </div>
       </div>
 
+      <PermissionBanner
+        module="Xuất kho — Xuất BTP"
+        moduleIcon="ri-stack-line"
+        moduleColor="xk"
+        requiredPermissions={['OUTBOUND_BTP_ISSUE', 'OUTBOUND_VIEW']}
+        className="mx-4 mb-3"
+      />
+
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
         {/* Step: Select Line */}
         {step === 'select' && (
           <>
-            {/* BTP Info */}
             <div className="bg-ant-card rounded-xl border border-gray-100 p-4">
               <h3 className="text-sm font-bold text-ant-text mb-3">Thông tin Pallet BTP</h3>
               <div className="space-y-2">
@@ -179,7 +190,6 @@ export default function BTPIssuePage() {
               )}
             </div>
 
-            {/* Select production line */}
             <div className="bg-ant-card rounded-xl border border-gray-100 p-4">
               <h3 className="text-sm font-bold text-ant-text mb-3">Chọn chuyền nhận BTP</h3>
               <div className="space-y-2">
@@ -209,13 +219,19 @@ export default function BTPIssuePage() {
               </div>
             </div>
 
-            <button
-              onClick={() => setStep('scan_pallet')}
-              disabled={currentBtpStock < issueQty}
-              className="w-full h-12 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 whitespace-nowrap"
-            >
-              <i className="ri-arrow-right-line mr-2" />Tiếp tục — Quét Pallet BTP
-            </button>
+            {canIssueBtp ? (
+              <button
+                onClick={() => setStep('scan_pallet')}
+                disabled={currentBtpStock < issueQty}
+                className="w-full h-14 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 whitespace-nowrap"
+              >
+                <i className="ri-arrow-right-line mr-2" />Tiếp tục — Quét Pallet BTP
+              </button>
+            ) : (
+              <div className="bg-ant-warning/10 rounded-xl p-4 border border-ant-warning/20">
+                <p className="text-xs text-ant-warning font-medium">{getPermissionExplanation('OUTBOUND_BTP_ISSUE')}</p>
+              </div>
+            )}
           </>
         )}
 
@@ -290,7 +306,7 @@ export default function BTPIssuePage() {
               ) : (
                 <button
                   onClick={startScanBin}
-                  className="w-full h-12 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
+                  className="w-full h-14 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
                 >
                   <i className="ri-qr-scan-line mr-2" />Quét QR Ô Kệ
                 </button>
@@ -300,7 +316,7 @@ export default function BTPIssuePage() {
             {scannedBinOk && (
               <button
                 onClick={() => setStep('confirm')}
-                className="w-full h-12 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
+                className="w-full h-14 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
               >
                 <i className="ri-arrow-right-line mr-2" />Tiếp tục — Xác nhận Xuất
               </button>
@@ -338,13 +354,13 @@ export default function BTPIssuePage() {
             <div className="flex gap-3">
               <button
                 onClick={() => { setStep('select'); setScannedPalletOk(false); setScannedBinOk(false); }}
-                className="flex-1 h-12 rounded-xl border border-gray-200 text-sm font-medium text-ant-text-secondary hover:bg-gray-50 transition-colors whitespace-nowrap"
+                className="flex-1 h-14 rounded-xl border border-gray-200 text-sm font-medium text-ant-text-secondary hover:bg-gray-50 transition-colors whitespace-nowrap"
               >
                 <i className="ri-arrow-left-line mr-1" />Làm lại
               </button>
               <button
                 onClick={handleConfirmIssue}
-                className="flex-1 h-12 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
+                className="flex-1 h-14 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
               >
                 <i className="ri-check-line mr-1.5" />Xác nhận Xuất BTP
               </button>

@@ -126,7 +126,6 @@ export default function QMHoldPage() {
         user: state.currentUser,
         role: state.role?.name || '',
         plant: state.plant?.code || 'MA',
-        shift: state.shift?.name || '',
         batchId: scanResult?.batch,
         defectCode,
         photos: photos.map((p) => `photo-${p}`),
@@ -160,6 +159,14 @@ export default function QMHoldPage() {
         'Đã khóa lô — Blocked Stock',
         () => {
           dispatch({ type: 'UPDATE_BATCH_STATUS', payload: { id: scanResult!.batch, status: 'Blocked Stock' } });
+          // Update all related HUs to Blocked Stock
+          const relatedHUs = state.handlingUnits.filter((h) => {
+            const batch = state.batches.find((b) => b.id === scanResult!.batch);
+            return batch && h.product === (batch.product?.split(' - ')[0] || '');
+          });
+          relatedHUs.forEach((hu) => {
+            dispatch({ type: 'UPDATE_HANDLING_UNIT', payload: { id: hu.id, updates: { status: 'Blocked Stock' } } });
+          });
           dispatch({
             type: 'ADD_QUALITY_HOLD',
             payload: {
@@ -244,7 +251,7 @@ export default function QMHoldPage() {
           <i className="ri-shield-check-line text-base" />
           <span className="text-xs font-bold">QUY TRÌNH KHÓA LÔ QM</span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto stepper-scroll">
           {STEPS.map((s, i) => (
             <div key={s.key} className="flex items-center gap-1 flex-1 last:flex-none">
               <button

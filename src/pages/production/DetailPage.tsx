@@ -51,6 +51,7 @@ export default function ProductionDetailPage() {
   const canPallet = hasPermission(roleId, 'PRODUCTION_PALLET');
   const canMaterial = hasPermission(roleId, 'PRODUCTION_MATERIAL') || hasPermission(roleId, 'PRODUCTION_CREATE_ORDER');
   const canConfirmFg = hasPermission(roleId, 'PRODUCTION_CONFIRM_FG') || hasPermission(roleId, 'PRODUCTION_CREATE_ORDER');
+  const canTeco = order.status === 'CNF' && (hasPermission(roleId, 'PRODUCTION_CREATE_ORDER') || hasPermission(roleId, 'PRODUCTION_CONFIRM_FG'));
 
   const handleRelease = () => {
     if (!canRelease) {
@@ -62,6 +63,20 @@ export default function ProductionDetailPage() {
       dispatch({ type: 'UPDATE_PRODUCTION_ORDER_STATUS', payload: { id: order.id, status: 'REL' } });
       addActivityLog(state.currentUser, state.role?.name || '', 'Phát lệnh SX', `PO ${order.id} — ${order.productName} · CRTD → REL`);
       addToast('success', `Đã phát hành lệnh sản xuất ${order.id}`);
+      setConfirming(false);
+    }, 600);
+  };
+
+  const handleTeco = () => {
+    if (!canTeco) {
+      addToast('error', 'Bạn không có quyền hoàn tất lệnh sản xuất.');
+      return;
+    }
+    setConfirming(true);
+    setTimeout(() => {
+      dispatch({ type: 'UPDATE_PRODUCTION_ORDER_STATUS', payload: { id: order.id, status: 'TECO' } });
+      addActivityLog(state.currentUser, state.role?.name || '', 'Hoàn tất SX', `PO ${order.id} — ${order.productName} · CNF → TECO`, 'CNF', 'TECO', `FG: ${order.fgQty?.toLocaleString() || 0} KG · Phế: ${order.scrapQty?.toLocaleString() || 0} KG`);
+      addToast('success', `Đã hoàn tất lệnh sản xuất ${order.id}`);
       setConfirming(false);
     }, 600);
   };
@@ -144,6 +159,24 @@ export default function ProductionDetailPage() {
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 flex items-center justify-center"><i className="ri-information-line text-ant-warning text-sm" /></div>
                 <p className="text-xs text-ant-warning font-medium">{getPermissionExplanation('PRODUCTION_CREATE_ORDER')}</p>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* TECO button — Hoàn tất */}
+      {order.status === 'CNF' && (
+        <>
+          {canTeco ? (
+            <button onClick={handleTeco} disabled={confirming} className={`w-full px-4 py-4 rounded-xl bg-ant-sx text-white text-base font-bold flex items-center justify-center gap-3 transition-all active:scale-[0.98] whitespace-nowrap ${confirming ? 'opacity-70' : ''}`}>
+              {confirming ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />Đang hoàn tất...</> : <><div className="w-6 h-6 flex items-center justify-center"><i className="ri-check-double-line text-lg" /></div>HOÀN TẤT LỆNH SẢN XUẤT (TECO)</>}
+            </button>
+          ) : (
+            <div className="bg-ant-warning/10 rounded-xl p-4 border border-ant-warning/20">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 flex items-center justify-center"><i className="ri-information-line text-ant-warning text-sm" /></div>
+                <p className="text-xs text-ant-warning font-medium">Chỉ Quản đốc/Tổ trưởng hoặc Admin được hoàn tất lệnh (TECO).</p>
               </div>
             </div>
           )}

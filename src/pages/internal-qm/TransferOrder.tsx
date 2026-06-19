@@ -1,6 +1,9 @@
 import { useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useApp } from '@/store/AppContext';
+import { useApp, hasPermission, getPermissionExplanation } from '@/store/AppContext';
+import PermissionBanner from '@/components/base/PermissionBanner';
+import MultiRoleSignature from '@/components/base/MultiRoleSignature';
+import type { SignedInfo } from '@/components/base/MultiRoleSignature';
 
 const STEPS = [
   { key: 'scan', label: 'Quét phiếu ĐC', icon: 'ri-file-list-3-line' },
@@ -21,13 +24,14 @@ const MOCK_PALLETS = [
 export default function TransferOrderPage() {
   const { state, dispatch, addToast, addActivityLog, simulateAction } = useApp();
   const navigate = useNavigate();
+  const canTransfer = hasPermission(state.role?.id, 'TRANSFER_ORDER');
   const [step, setStep] = useState(0);
   const [scannedST, setScannedST] = useState(false);
   const [scannedPallets, setScannedPallets] = useState<string[]>([]);
   const [vehiclePlate, setVehiclePlate] = useState('');
   const [tempC, setTempC] = useState('-18');
-  const [signSX, setSignSX] = useState(false);
-  const [signTK, setSignTK] = useState(false);
+  const [signSX, setSignSX] = useState<SignedInfo | null>(null);
+  const [signTK, setSignTK] = useState<SignedInfo | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [duplicateError, setDuplicateError] = useState('');
@@ -93,6 +97,10 @@ export default function TransferOrderPage() {
   }, [step, scannedPallets.length, vehiclePlate, tempC, signSX, signTK, addToast]);
 
   const handleConfirm = useCallback(() => {
+    if (!canTransfer) {
+      addToast('error', 'Bạn không có quyền thực hiện thao tác này.');
+      return;
+    }
     if (!signSX || !signTK) {
       addToast('warning', 'Cần đầy đủ chữ ký bàn giao');
       return;
@@ -103,15 +111,15 @@ export default function TransferOrderPage() {
       `ST-2026-0089 — ${scannedPallets.length} pallet MA → BK, xe 67C-123.45, ${tempC}°C`,
       'Đã chốt điều chuyển — Stock in Transit',
       () => {
-        dispatch({ type: 'UPDATE_TRANSFER_ORDER', payload: { id: 'ST-2026-0089', updates: { status: 'Stock in Transit - Đang đi đường' } } });
+        dispatch({ type: 'UPDATE_TRANSFER_ORDER', payload: { id: 'ST-2026-0089', updates: { status: 'Stock in Transit' } } });
         scannedPallets.forEach((hu) => {
-          dispatch({ type: 'UPDATE_HANDLING_UNIT', payload: { id: hu, updates: { plant: 'BK', location: '', status: 'Đang vận chuyển' } } });
+          dispatch({ type: 'UPDATE_HANDLING_UNIT', payload: { id: hu, updates: { plant: 'BK', location: '', status: 'Đang điều chuyển' } } });
         });
         setIsConfirming(false);
         setConfirmed(true);
       }
     );
-  }, [signSX, signTK, addToast, simulateAction, dispatch, scannedPallets, tempC]);
+  }, [signSX, signTK, addToast, simulateAction, dispatch, scannedPallets, tempC, canTransfer]);
 
   return (
     <div className="p-4 space-y-4">
@@ -126,13 +134,21 @@ export default function TransferOrderPage() {
         </div>
       </div>
 
+      <PermissionBanner
+        module="Nội bộ & QM — Điều chuyển liên NM"
+        moduleIcon="ri-arrow-left-right-line"
+        moduleColor="qm"
+        requiredPermissions={['TRANSFER_ORDER', 'QM_VIEW']}
+        className="mx-2"
+      />
+
       {/* Process Stepper */}
       <div className="bg-ant-qm rounded-xl p-4 text-white">
         <div className="flex items-center gap-2 mb-3">
           <i className="ri-arrow-left-right-line text-base" />
           <span className="text-xs font-bold">ĐIỀU CHUYỂN NỘI BỘ</span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto stepper-scroll">
           {STEPS.map((s, i) => (
             <div key={s.key} className="flex items-center gap-1 flex-1 last:flex-none">
               <button
@@ -307,36 +323,24 @@ export default function TransferOrderPage() {
             <h3 className="text-sm font-bold text-ant-text mb-3">Bước 4 — Ký bàn giao</h3>
             <p className="text-xs text-ant-text-secondary mb-4">Yêu cầu chữ ký của cả Đại diện sản xuất và Thủ kho.</p>
 
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => { setSignSX(true); addToast('success', 'Đại diện SX đã ký'); }}
-                disabled={signSX}
-                className={`p-4 rounded-xl border-2 text-center transition-all ${
-                  signSX ? 'bg-ant-sx/5 border-ant-sx/30' : 'bg-ant-bg border-dashed border-gray-200 hover:border-ant-sx/30'
-                }`}
-              >
-                <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center ${signSX ? 'bg-ant-sx/10' : 'bg-gray-100'}`}>
-                  <i className={`${signSX ? 'ri-pen-nib-fill text-ant-sx' : 'ri-pen-nib-line text-ant-text-secondary'} text-base`} />
-                </div>
-                <p className="text-sm font-bold text-ant-text">Đại diện SX</p>
-                {signSX && <p className="text-xxs text-ant-sx font-medium mt-1">Đã ký</p>}
-                {!signSX && <p className="text-xxs text-ant-text-secondary mt-1">Chạm để ký</p>}
-              </button>
+            <div className="space-y-3">
+              <MultiRoleSignature
+                label="Đại diện sản xuất"
+                roleLabel="Nguyễn Văn An · Công nhân SX"
+                requiredPermission="PRODUCTION_SIGN"
+                signedInfo={signSX}
+                otherSignerUsername={signTK?.signerUsername}
+                onSign={(info) => setSignSX(info)}
+              />
 
-              <button
-                onClick={() => { setSignTK(true); addToast('success', 'Thủ kho đã ký'); }}
-                disabled={signTK}
-                className={`p-4 rounded-xl border-2 text-center transition-all ${
-                  signTK ? 'bg-ant-nk/5 border-ant-nk/30' : 'bg-ant-bg border-dashed border-gray-200 hover:border-ant-nk/30'
-                }`}
-              >
-                <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center ${signTK ? 'bg-ant-nk/10' : 'bg-gray-100'}`}>
-                  <i className={`${signTK ? 'ri-pen-nib-fill text-ant-nk' : 'ri-pen-nib-line text-ant-text-secondary'} text-base`} />
-                </div>
-                <p className="text-sm font-bold text-ant-text">Thủ kho</p>
-                {signTK && <p className="text-xxs text-ant-nk font-medium mt-1">Đã ký</p>}
-                {!signTK && <p className="text-xxs text-ant-text-secondary mt-1">Chạm để ký</p>}
-              </button>
+              <MultiRoleSignature
+                label="Thủ kho"
+                roleLabel="Trần Thị Bình · Thủ kho"
+                requiredPermission="INBOUND_SIGN_WH"
+                signedInfo={signTK}
+                otherSignerUsername={signSX?.signerUsername}
+                onSign={(info) => setSignTK(info)}
+              />
             </div>
           </div>
 
@@ -366,12 +370,17 @@ export default function TransferOrderPage() {
 
             <div className="bg-ant-qm/5 rounded-lg p-3 border border-ant-qm/20">
               <p className="text-xs text-ant-text-secondary">
-                Sau khi chốt, hàng sẽ chuyển trạng thái <strong className="text-ant-qm">&ldquo;Stock in Transit - Đang đi đường&rdquo;</strong>.
+                Sau khi chốt, hàng sẽ chuyển trạng thái <strong className="text-ant-qm">&ldquo;Stock in Transit&rdquo;</strong>.
                 Nhà máy Bình Khánh sẽ xác nhận nhận hàng sau.
               </p>
             </div>
           </div>
 
+          {!canTransfer ? (
+            <div className="bg-ant-warning/10 rounded-xl p-4 border border-ant-warning/20">
+              <p className="text-xs text-ant-warning font-medium">{getPermissionExplanation('TRANSFER_ORDER')}</p>
+            </div>
+          ) : (
           <button
             onClick={handleConfirm}
             disabled={isConfirming}
@@ -391,6 +400,7 @@ export default function TransferOrderPage() {
               </>
             )}
           </button>
+          )}
         </div>
       )}
 

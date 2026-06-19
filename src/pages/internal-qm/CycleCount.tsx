@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/store/AppContext';
+import { useApp, hasPermission, getPermissionExplanation } from '@/store/AppContext';
+import PermissionBanner from '@/components/base/PermissionBanner';
 
 const STEPS = [
   { key: 'scan', label: 'Quét ô kệ', icon: 'ri-layout-grid-line' },
@@ -27,6 +28,7 @@ const MOCK_EXPECTED_PALLETS = [
 export default function CycleCountPage() {
   const { state, dispatch, addToast, addActivityLog, simulateAction } = useApp();
   const navigate = useNavigate();
+  const canCycleCount = hasPermission(state.role?.id, 'QM_CYCLE_COUNT');
   const [step, setStep] = useState(0);
   const [scannedBin, setScannedBin] = useState(false);
   const [scannedPallets, setScannedPallets] = useState<string[]>([]);
@@ -72,6 +74,10 @@ export default function CycleCountPage() {
   }, [photos.length, addToast]);
 
   const handleConfirm = useCallback(() => {
+    if (!canCycleCount) {
+      addToast('error', 'Bạn không có quyền thực hiện thao tác này.');
+      return;
+    }
     const actual = Number(actualQty) || (scannedPallets.length * 500);
     const isMatch = scannedPallets.length === MOCK_BIN_DATA.expectedPallets && actual === expectedTotal;
 
@@ -113,7 +119,7 @@ export default function CycleCountPage() {
         setResult({ match: isMatch, expected: expectedTotal, actual });
       }
     );
-  }, [actualQty, scannedPallets.length, expectedTotal, photos.length, note, addToast, simulateAction, dispatch, state.plant?.code, state.currentUser]);
+  }, [actualQty, scannedPallets.length, expectedTotal, photos.length, note, addToast, simulateAction, dispatch, state.plant?.code, state.currentUser, canCycleCount]);
 
   const selectedPalletQty = scannedPallets.length * 500;
 
@@ -136,7 +142,7 @@ export default function CycleCountPage() {
           <i className="ri-clipboard-line text-base" />
           <span className="text-xs font-bold">KIỂM KÊ CHU KỲ</span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto stepper-scroll">
           {STEPS.map((s, i) => (
             <div key={s.key} className="flex items-center gap-1 flex-1 last:flex-none">
               <button
@@ -314,6 +320,11 @@ export default function CycleCountPage() {
             )}
           </div>
 
+          {!canCycleCount ? (
+            <div className="bg-ant-warning/10 rounded-xl p-4 border border-ant-warning/20">
+              <p className="text-xs text-ant-warning font-medium">{getPermissionExplanation('QM_CYCLE_COUNT')}</p>
+            </div>
+          ) : (
           <button
             onClick={handleConfirm}
             disabled={isConfirming}
@@ -333,6 +344,7 @@ export default function CycleCountPage() {
               </>
             )}
           </button>
+          )}
         </div>
       )}
 

@@ -20,6 +20,7 @@ export default function InboundPage() {
       case 'Chờ nhập kho': case 'Chờ nhập kho TP': return 'nk';
       case 'Chờ putaway': return 'warning';
       case 'Đã xếp kệ': return 'success';
+      case 'Chờ đồng bộ putaway': return 'offline';
       case 'Chờ đồng bộ': return 'offline';
       default: return 'qm';
     }
@@ -83,7 +84,7 @@ export default function InboundPage() {
           <MiniStat icon="ri-archive-drawer-line" color="ant-nk" label="Chờ nhập kho" value={pendingReceiving.length} />
           <MiniStat icon="ri-layout-grid-line" color="ant-warning" label="Chờ putaway" value={pendingPutaway.length} />
           <MiniStat icon="ri-check-line" color="ant-sx" label="Đã xếp kệ" value={completedHUs.length} />
-          <MiniStat icon="ri-cloud-line" color="ant-offline" label="Lỗi đồng bộ" value={plantHUs.filter((hu) => hu.status === 'Chờ đồng bộ').length} />
+          <MiniStat icon="ri-cloud-line" color="ant-offline" label="Lỗi đồng bộ" value={plantHUs.filter((hu) => hu.status === 'Chờ đồng bộ' || hu.status === 'Chờ đồng bộ putaway').length} />
         </div>
       </div>
 

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useApp } from '@/store/AppContext';
+import { useApp, hasPermission, getPermissionExplanation } from '@/store/AppContext';
 import { MOCK_OPERATIONS } from '@/mocks/data';
+import PermissionBanner from '@/components/base/PermissionBanner';
 
 export default function ProductionWipPage() {
   const { id } = useParams<{ id: string }>();
@@ -9,12 +10,14 @@ export default function ProductionWipPage() {
   const { state, dispatch, addToast, addActivityLog, simulateAction } = useApp();
 
   const order = state.productionOrders.find((po) => po.id === id);
-  const [currentOpIndex, setCurrentOpIndex] = useState(1); // Default to Op 0020
+  const [currentOpIndex, setCurrentOpIndex] = useState(1);
   const [wipQty, setWipQty] = useState(3200);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [weighing, setWeighing] = useState(false);
+
+  const canWip = hasPermission(state.role?.id, 'PRODUCTION_WIP');
 
   const currentOp = MOCK_OPERATIONS[currentOpIndex];
 
@@ -36,6 +39,10 @@ export default function ProductionWipPage() {
   };
 
   const handleSave = () => {
+    if (!canWip) {
+      addToast('error', 'Bạn không có quyền thực hiện thao tác này.');
+      return;
+    }
     if (!order || !id) return;
     if (wipQty <= 0) {
       addToast('error', 'Vui lòng nhập số lượng WIP hợp lệ (> 0 KG)');
@@ -52,7 +59,7 @@ export default function ProductionWipPage() {
           payload: { id, updates: { wipQty, currentOperation: currentOp.code, status: order.status === 'REL' ? 'STRT' : order.status } },
         });
         if (order.status === 'REL') {
-          addActivityLog(state.currentUser, state.role?.name || '', 'Bắt đầu SX', `PO ${id} — REL → STRT · Bắt đầu từ ${currentOp.code}`);
+          addActivityLog(state.currentUser, state.role?.name || '', 'Bắt đầu SX', `PO ${id} — REL → STRT · Bắt đầu từ ${currentOp.code}`, 'REL', 'STRT');
         }
         setSaving(false);
       }
@@ -89,6 +96,13 @@ export default function ProductionWipPage() {
         <h2 className="text-lg font-bold">PO {id}</h2>
         <p className="text-xs text-white/70 mt-1">WIP hiện tại: {(order.wipQty || 0).toLocaleString()} KG</p>
       </div>
+
+      <PermissionBanner
+        module="Sản xuất — Ghi WIP"
+        moduleIcon="ri-tools-line"
+        moduleColor="sx"
+        requiredPermissions={['PRODUCTION_WIP', 'PRODUCTION_VIEW']}
+      />
 
       {/* Operation Stepper */}
       <div className="bg-ant-card rounded-xl border border-gray-100 p-4">
@@ -164,6 +178,22 @@ export default function ProductionWipPage() {
       <div className="bg-ant-card rounded-xl border border-gray-100 p-4">
         <h3 className="text-sm font-bold text-ant-text mb-3">Nhập sản lượng WIP</h3>
 
+        {/* WIP vượt kế hoạch warning */}
+        {wipQty > order.plannedQty && (
+          <div className="mb-3 p-3 rounded-lg bg-ant-warning/10 border border-ant-warning/20 flex items-start gap-2">
+            <div className="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">
+              <i className="ri-alert-line text-ant-warning text-sm" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-ant-warning">Cảnh báo: WIP vượt kế hoạch!</p>
+              <p className="text-xxs text-ant-text-secondary">
+                WIP hiện tại ({wipQty.toLocaleString()} KG) vượt kế hoạch ({order.plannedQty.toLocaleString()} KG).
+                Vui lòng kiểm tra với Quản đốc trước khi tiếp tục.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Weigh button */}
         <button
           onClick={handleWeigh}
@@ -235,29 +265,35 @@ export default function ProductionWipPage() {
       </div>
 
       {/* Save Button */}
-      <button
-        onClick={handleSave}
-        disabled={saving || wipQty <= 0}
-        className={`w-full px-4 py-4 rounded-xl text-white text-base font-bold flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${
-          saving || wipQty <= 0
-            ? 'bg-gray-300 cursor-not-allowed'
-            : 'bg-ant-sx hover:bg-ant-sx-dark'
-        }`}
-      >
-        {saving ? (
-          <>
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Đang lưu WIP...
-          </>
-        ) : (
-          <>
-            <div className="w-6 h-6 flex items-center justify-center">
-              <i className="ri-save-line text-lg" />
-            </div>
-            Lưu WIP
-          </>
-        )}
-      </button>
+      {canWip ? (
+        <button
+          onClick={handleSave}
+          disabled={saving || wipQty <= 0}
+          className={`w-full px-4 py-4 rounded-xl text-white text-base font-bold flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${
+            saving || wipQty <= 0
+              ? 'bg-gray-300 cursor-not-allowed'
+              : 'bg-ant-sx hover:bg-ant-sx-dark'
+          }`}
+        >
+          {saving ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Đang lưu WIP...
+            </>
+          ) : (
+            <>
+              <div className="w-6 h-6 flex items-center justify-center">
+                <i className="ri-save-line text-lg" />
+              </div>
+              Lưu WIP
+            </>
+          )}
+        </button>
+      ) : (
+        <div className="bg-ant-warning/10 rounded-xl p-4 border border-ant-warning/20">
+          <p className="text-xs text-ant-warning font-medium">{getPermissionExplanation('PRODUCTION_WIP')}</p>
+        </div>
+      )}
 
       <div className="h-4" />
     </div>

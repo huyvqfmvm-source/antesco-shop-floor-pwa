@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useApp } from '@/store/AppContext';
+import { useApp, hasPermission, getPermissionExplanation } from '@/store/AppContext';
 import PermissionBanner from '@/components/base/PermissionBanner';
 
 type LoadingStep = 'scan_od' | 'scan_pallets' | 'ocr_container' | 'checklist' | 'confirm';
@@ -76,6 +76,7 @@ export default function ContainerLoadingPage() {
   const allChecklistDone = CHECKLIST_ITEMS.every((item) => checklist[item.key]);
   const allPalletsScanned = relatedPallets.length > 0 && relatedPallets.every((p) => scannedPallets.includes(p.id));
   const canConfirm = allPalletsScanned && allChecklistDone && ocrContainer && ocrSeal && !tempWarning;
+  const canContainerLoading = hasPermission(state.role?.id, 'OUTBOUND_CONTAINER_LOADING');
 
   const missingItems: string[] = [];
   if (!allPalletsScanned) missingItems.push('Chưa quét đủ tất cả pallet');
@@ -138,7 +139,7 @@ export default function ContainerLoadingPage() {
           dispatch({ type: 'UPDATE_OUTBOUND_DELIVERY', payload: { id: delivery.id, updates: { status: 'Đã xuất bến', container: ocrContainer, seal: ocrSeal } } });
         }
         scannedPallets.forEach((pId) => {
-          dispatch({ type: 'UPDATE_HANDLING_UNIT', payload: { id: pId, updates: { status: 'Đã xuất bến' } } });
+          dispatch({ type: 'UPDATE_HANDLING_UNIT', payload: { id: pId, updates: { status: 'Đã xuất kho' } } });
         });
         addActivityLog(state.currentUser, state.role?.name || '', 'Xuất bến', `OD ${delivery?.id} · Container ${ocrContainer} · Seal ${ocrSeal}`);
         setShowExportPopup(true);
@@ -242,7 +243,7 @@ export default function ContainerLoadingPage() {
             {scannedOD && (
               <button
                 onClick={() => setStep('scan_pallets')}
-                className="w-full h-12 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
+                className="w-full h-14 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
               >
                 <i className="ri-arrow-right-line mr-2" />Tiếp tục — Quét Pallet Loading
               </button>
@@ -315,7 +316,7 @@ export default function ContainerLoadingPage() {
             <button
               onClick={() => setStep('ocr_container')}
               disabled={!allPalletsScanned}
-              className="w-full h-12 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 whitespace-nowrap"
+              className="w-full h-14 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 whitespace-nowrap"
             >
               <i className="ri-arrow-right-line mr-2" />Tiếp tục — OCR Container/Seal
             </button>
@@ -341,7 +342,7 @@ export default function ContainerLoadingPage() {
                   ) : (
                     <button
                       onClick={handleOCRContainer}
-                      className="w-full h-12 rounded-xl bg-ant-nk text-white text-sm font-bold hover:bg-ant-nk-dark transition-all active:scale-[0.98] whitespace-nowrap"
+                      className="w-full h-14 rounded-xl bg-ant-nk text-white text-sm font-bold hover:bg-ant-nk-dark transition-all active:scale-[0.98] whitespace-nowrap"
                     >
                       <i className="ri-scan-2-line mr-2" />Quét OCR Container/Seal
                     </button>
@@ -372,7 +373,7 @@ export default function ContainerLoadingPage() {
             {ocrDone && (
               <button
                 onClick={() => setStep('checklist')}
-                className="w-full h-12 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
+                className="w-full h-14 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
               >
                 <i className="ri-arrow-right-line mr-2" />Tiếp tục — Checklist
               </button>
@@ -464,7 +465,7 @@ export default function ContainerLoadingPage() {
             <button
               onClick={() => setStep('confirm')}
               disabled={!canConfirm}
-              className="w-full h-12 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 whitespace-nowrap"
+              className="w-full h-14 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 whitespace-nowrap"
             >
               <i className="ri-arrow-right-line mr-2" />Tiếp tục — Xác nhận Xuất Bến
             </button>
@@ -503,20 +504,49 @@ export default function ContainerLoadingPage() {
               })}
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setStep('checklist')}
-                className="flex-1 h-12 rounded-xl border border-gray-200 text-sm font-medium text-ant-text-secondary hover:bg-gray-50 transition-colors whitespace-nowrap"
-              >
-                <i className="ri-arrow-left-line mr-1" />Kiểm tra lại
-              </button>
-              <button
-                onClick={handleConfirmExport}
-                className="flex-1 h-14 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
-              >
-                <i className="ri-ship-line mr-1.5" />Xác nhận Xuất Bến
-              </button>
-            </div>
+            {!canContainerLoading ? (
+              <div className="bg-ant-warning/10 rounded-xl p-4 border border-ant-warning/20">
+                <p className="text-xs text-ant-warning font-medium">{getPermissionExplanation('OUTBOUND_CONTAINER_LOADING')}</p>
+              </div>
+            ) : (
+            <>
+              {/* Missing items in confirm step */}
+              {!canConfirm && missingItems.length > 0 && (
+                <div className="bg-ant-error/5 rounded-xl border border-ant-error/20 p-3">
+                  <p className="text-xs font-bold text-ant-error mb-1.5">
+                    <i className="ri-error-warning-line mr-1" />Chưa đủ điều kiện xuất bến:
+                  </p>
+                  <ul className="space-y-0.5">
+                    {missingItems.map((item, i) => (
+                      <li key={i} className="text-xs text-ant-text-secondary flex items-center gap-1.5">
+                        <span className="w-1 h-1 rounded-full bg-ant-error shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep('checklist')}
+                  className="flex-1 h-14 rounded-xl border border-gray-200 text-sm font-medium text-ant-text-secondary hover:bg-gray-50 transition-colors whitespace-nowrap"
+                >
+                  <i className="ri-arrow-left-line mr-1" />Kiểm tra lại
+                </button>
+                <button
+                  onClick={handleConfirmExport}
+                  disabled={!canConfirm}
+                  className={`flex-1 h-14 rounded-xl text-white text-sm font-bold transition-all active:scale-[0.98] whitespace-nowrap ${
+                    canConfirm
+                      ? 'bg-ant-xk hover:bg-ant-xk-dark'
+                      : 'bg-gray-300 cursor-not-allowed'
+                  }`}
+                >
+                  <i className="ri-ship-line mr-1.5" />Xác nhận Xuất Bến
+                </button>
+              </div>
+            </>
+            )}
           </>
         )}
       </div>

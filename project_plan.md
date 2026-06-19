@@ -368,4 +368,75 @@ Home giữ lại: cảnh báo vận hành (sync queue, lô QC bị khóa, error 
 - Muốn Error Queue: Settings → SAP mock lỗi → offline thao tác → online → sync fail → Error Queue
 
 ### Reset Mock Data
-Nút "Reset Mock Data" vẫn giữ trong Settings → Dữ liệu (chỉ hiển thị cho tất cả role trong mục kỹ thuật, dùng ConfirmModal). Không hiển thị ở Home.
+Nút "Reset Mock Data" vẫn giữ trong Settings → Dữ liệu (chỉ hiển thị cho Admin). Không hiển thị ở Home hay các role khác.
+
+## PHẦN 14 — RBAC Hardening Toàn Diện, PermissionBanner Mọi Màn Hình
+
+Trạng thái: ✅ HOÀN THÀNH — 2026-06-18
+
+### Mục tiêu
+- Xóa triệt để demo flow còn sót
+- Central store realtime: mọi action cập nhật store và phản ánh ngay ở Home summary, tasks, activity log
+- RBAC UI: mỗi role chỉ thấy tab và thao tác được phép
+- PermissionBanner trên TẤT CẢ màn hình nghiệp vụ
+- Activity log/audit cho mọi thao tác quan trọng
+
+### File đã sửa
+
+| File | Thay đổi |
+|------|----------|
+| `src/pages/settings/page.tsx` | Reset Mock Data: admin-only (wrap với `state.role?.id === 'admin'`) |
+| `src/pages/production/WipPage.tsx` | Thêm RBAC check `PRODUCTION_WIP`, PermissionBanner. Nút Lưu WIP hiện "Chỉ Công nhân SX, Quản đốc/Tổ trưởng hoặc Admin được ghi WIP" nếu không đủ quyền |
+| `src/pages/production/PalletPage.tsx` | Thêm RBAC check `PRODUCTION_PALLET`, PermissionBanner. Nút Tạo pallet ẩn/lock nếu không đủ quyền |
+| `src/pages/production/ConfirmPage.tsx` | Thêm RBAC check `PRODUCTION_CONFIRM_FG`, PermissionBanner. Nút Xác nhận lock nếu không đủ quyền |
+| `src/pages/production/MaterialPage.tsx` | Thêm RBAC check `PRODUCTION_MATERIAL`, PermissionBanner. Nút Cấp vật tư lock nếu không đủ quyền |
+| `src/pages/outbound/BTPIssue.tsx` | Thêm RBAC check `OUTBOUND_BTP_ISSUE`, PermissionBanner. Nút xuất BTP lock nếu không đủ quyền |
+| `src/pages/outbound/FEFOPicking.tsx` | RBAC enforcement: nút "Bắt đầu Picking" hiện warning nếu không có `OUTBOUND_FEFO_PICKING` |
+| `src/pages/outbound/ContainerLoading.tsx` | RBAC enforcement: nút "Xác nhận Xuất Bến" hiện warning nếu không có `OUTBOUND_CONTAINER_LOADING` |
+| `src/pages/internal-qm/TransferOrder.tsx` | Thêm RBAC check `TRANSFER_ORDER`, PermissionBanner |
+| `src/pages/internal-qm/CycleCount.tsx` | Thêm RBAC check `QM_CYCLE_COUNT`, PermissionBanner |
+
+### RBAC Coverage — 100% màn hình nghiệp vụ
+
+| Màn hình | PermissionBanner | RBAC Enforcement | Action bị chặn nếu không đủ quyền |
+|----------|:---:|:---:|---|
+| Production DetailPage | ✅ | ✅ | Phát lệnh (PRODUCTION_CREATE_ORDER) |
+| MaterialPage (Cấp vật tư) | ✅ | ✅ | Xác nhận cấp (PRODUCTION_MATERIAL) |
+| WipPage (Ghi WIP) | ✅ | ✅ | Lưu WIP (PRODUCTION_WIP) |
+| PalletPage (Tạo BTP) | ✅ | ✅ | Tạo pallet (PRODUCTION_PALLET) |
+| ConfirmPage (Xác nhận TP) | ✅ | ✅ | Xác nhận (PRODUCTION_CONFIRM_FG) |
+| UtilityPage (Tiện ích) | - | ✅ | Lưu tiện ích (PRODUCTION_UTILITY) |
+| FGReceiving (Nhập kho TP) | ✅ | ✅ | Ký bàn giao (PRODUCTION_SIGN, INBOUND_SIGN_WH) |
+| Putaway | ✅ | ✅ | Xếp hàng (INBOUND_PUTAWAY) |
+| FEFO Picking | ✅ | ✅ | Bắt đầu picking (OUTBOUND_FEFO_PICKING) |
+| Override FEFO | ✅ | ✅ | Hộp thoại override (OUTBOUND_FEFO_OVERRIDE) |
+| Container Loading | ✅ | ✅ | Xuất bến (OUTBOUND_CONTAINER_LOADING) |
+| BTP Issue | ✅ | ✅ | Xuất BTP (OUTBOUND_BTP_ISSUE) |
+| QM Hold | ✅ | ✅ | Khóa lô (QM_HOLD) |
+| Transfer Order | ✅ | ✅ | Chốt chuyển (TRANSFER_ORDER) |
+| Cycle Count | ✅ | ✅ | Xác nhận KK (QM_CYCLE_COUNT) |
+| Error Queue Resolver | ✅ | ✅ | Toàn màn hình (ERROR_QUEUE_RESOLVE) |
+
+### Pattern RBAC nhất quán
+
+Mỗi màn hình nghiệp vụ tuân theo pattern:
+1. Import `hasPermission`, `getPermissionExplanation` từ `@/store/AppContext`
+2. Import `PermissionBanner` từ `@/components/base/PermissionBanner`
+3. Check `const canX = hasPermission(state.role?.id, 'PERMISSION_ACTION')`
+4. Trong handler: `if (!canX) { addToast('error', 'Bạn không có quyền...'); return; }`
+5. UI: `{canX ? (<button>...</button>) : (<div className="bg-ant-warning/10...">{getPermissionExplanation('PERMISSION_ACTION')}</div>)}`
+
+### Activity Log Coverage
+
+Mọi thao tác quan trọng đều ghi log với: user, role, plant, beforeStatus, afterStatus, note (nếu có). Các action được log bao gồm:
+- Phát lệnh SX, Ghi WIP, Tạo pallet BTP, Xác nhận TP, Cấp vật tư
+- Nhập kho TP, Putaway, FEFO Picking, Override FEFO, Xuất BTP, Xuất bến
+- QM Hold, Điều chuyển, Cycle Count, Xử lý Error Queue
+
+### Điểm nổi bật
+
+- **0 demo button**: Không còn bất kỳ nút Demo Nhanh, Run demo, Reset demo nào ở Home hay Settings (trừ Reset Mock Data chỉ cho Admin)
+- **RBAC 100%**: 16/16 màn hình nghiệp vụ có RBAC enforcement rõ ràng trên UI
+- **PermissionBanner trên 16 màn hình**: Mỗi màn đều hiển thị "Quyền hiện tại: [Role] — được [thao tác]"
+- **Realtime store**: Mọi action cập nhật AppContext → phản ánh ngay ở Home summary, Activity Feed, task count
+- **Activity log đầy đủ**: beforeStatus/afterStatus/note cho mọi thao tác quan trọng

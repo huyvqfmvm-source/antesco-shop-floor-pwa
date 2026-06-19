@@ -364,7 +364,7 @@ export default function HomePage() {
                 <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
                   <QuickBtn icon="ri-bill-line" color="nk" label="Nhập kho" onClick={() => navigate('/inbound')} />
                   <QuickBtn icon="ri-receipt-line" color="xk" label="Xuất kho" onClick={() => navigate('/outbound')} />
-                  <QuickBtn icon="ri-ship-line" color="xm" label="Xuất bến" onClick={() => navigate('/outbound')} />
+                  <QuickBtn icon="ri-ship-line" color="xk" label="Xuất bến" onClick={() => navigate('/outbound')} />
                 </div>
               </div>
 

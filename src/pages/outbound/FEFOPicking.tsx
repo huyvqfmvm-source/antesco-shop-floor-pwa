@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useApp } from '@/store/AppContext';
+import { useApp, hasPermission, getPermissionExplanation } from '@/store/AppContext';
 import PermissionBanner from '@/components/base/PermissionBanner';
 
 type PickingStep = 'select' | 'scan_bin' | 'scan_pallet' | 'confirm';
@@ -67,7 +67,7 @@ export default function FEFOPickingPage() {
       if (!hu) continue;
       const bin = state.bins.find((b) => b.id === hu.location);
       if (!batch) continue;
-      const isBlocked = state.qualityHolds.some((qh) => qh.batch === batch.id && qh.status === 'Đang giữ')
+      const isBlocked = state.qualityHolds.some((qh) => qh.batch === batch.id && (qh.status === 'Đang giữ' || qh.status === 'Đã khóa'))
         || batch.status === 'Blocked Stock';
       // Return the first unblocked pallet found
       if (!isBlocked) {
@@ -111,7 +111,7 @@ export default function FEFOPickingPage() {
         const item = delivery.items.find((i) => i.product === h.product);
         const batch = state.batches.find((b) => b.id === (item?.batch || ''));
         const isRecommended = fefoPallet?.hu === h.id;
-        const isBlocked = state.qualityHolds.some((qh) => qh.batch === (batch?.id || '') && qh.status === 'Đang giữ') || batch?.status === 'Blocked Stock';
+        const isBlocked = state.qualityHolds.some((qh) => qh.batch === (batch?.id || '') && (qh.status === 'Đang giữ' || qh.status === 'Đã khóa')) || batch?.status === 'Blocked Stock';
         let fefoStatus: 'recommended' | 'check' | 'blocked' | 'unrelated' = 'unrelated';
         if (isRecommended && !isBlocked) fefoStatus = 'recommended';
         else if (isBlocked) fefoStatus = 'blocked';
@@ -122,6 +122,7 @@ export default function FEFOPickingPage() {
 
   const canOverride = state.role?.id === 'quan-doc' || state.role?.id === 'admin';
   const canStartPicking = Boolean(fefoPallet && !fefoPallet.isBlocked);
+  const canFefoPicking = hasPermission(state.role?.id, 'OUTBOUND_FEFO_PICKING');
 
   const handleStartPicking = () => {
     if (!fefoPallet) {
@@ -195,7 +196,14 @@ export default function FEFOPickingPage() {
     setWrongFefoPopup(false);
     setScannedPalletOk(true);
     const palletId = currentScanResult?.code || '';
-    addActivityLog(state.currentUser, state.role?.name || '', 'Override FEFO', `Lấy pallet ${palletId} thay vì ${fefoPallet?.hu} — Lý do: ${overrideReason}`);
+    addActivityLog(
+      state.currentUser, state.role?.name || '',
+      'Override FEFO',
+      `Lấy pallet ${palletId} thay vì ${fefoPallet?.hu} — Lý do: ${overrideReason}`,
+      'FEFO đề xuất',
+      'FEFO đã override',
+      `Override bởi ${state.role?.name} — Lý do: ${overrideReason}`
+    );
     addToast('warning', `Đã override FEFO. Lý do: ${overrideReason}`);
   };
 
@@ -367,6 +375,7 @@ export default function FEFOPickingPage() {
               </div>
             </div>
 
+            {canFefoPicking ? (
             <button
               onClick={handleStartPicking}
               disabled={!canStartPicking}
@@ -379,6 +388,11 @@ export default function FEFOPickingPage() {
               <i className={`${canStartPicking ? 'ri-qr-scan-line' : 'ri-lock-line'} mr-2`} />
               {canStartPicking ? 'Bắt đầu Picking' : 'Đang khóa chất lượng'}
             </button>
+            ) : (
+              <div className="bg-ant-warning/10 rounded-xl p-4 border border-ant-warning/20">
+                <p className="text-xs text-ant-warning font-medium">{getPermissionExplanation('OUTBOUND_FEFO_PICKING')}</p>
+              </div>
+            )}
           </>
         )}
 
@@ -408,7 +422,7 @@ export default function FEFOPickingPage() {
               ) : (
                 <button
                   onClick={startScanBin}
-                  className="w-full h-12 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
+                  className="w-full h-14 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
                 >
                   <i className="ri-qr-scan-line mr-2" />Quét QR ô kệ
                 </button>
@@ -418,7 +432,7 @@ export default function FEFOPickingPage() {
             {scannedBinOk && (
               <button
                 onClick={() => setStep('scan_pallet')}
-                className="w-full h-12 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
+                className="w-full h-14 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
               >
                 <i className="ri-arrow-right-line mr-2" />Tiếp tục — Quét Pallet
               </button>
@@ -462,7 +476,7 @@ export default function FEFOPickingPage() {
             {scannedPalletOk && (
               <button
                 onClick={() => setStep('confirm')}
-                className="w-full h-12 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
+                className="w-full h-14 rounded-xl bg-ant-xk text-white text-sm font-bold hover:bg-ant-xk-dark transition-all active:scale-[0.98] whitespace-nowrap"
               >
                 <i className="ri-arrow-right-line mr-2" />Tiếp tục — Xác nhận
               </button>

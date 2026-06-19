@@ -137,6 +137,12 @@
   border-radius: 999px;
 }
 
+/* === Stepper scroll with fade indicator === */
+.stepper-scroll {
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
+
 /* === Page transition === */
 .page-enter {
   opacity: 0;

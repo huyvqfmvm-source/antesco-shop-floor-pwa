@@ -28,7 +28,9 @@ export default function ErrorQueueResolverPage() {
   const [showResolveModal, setShowResolveModal] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [resolutionNote, setResolutionNote] = useState('');
+  const [editData, setEditData] = useState<Record<string, string>>({});
 
   // RBAC check
   const canResolve = hasPermission(state.role?.id, 'ERROR_QUEUE_RESOLVE') || state.role?.id === 'admin';
@@ -84,11 +86,45 @@ export default function ErrorQueueResolverPage() {
         resolution: resolutionNote || 'Đã xử lý',
       },
     });
+
+    // Cập nhật entity liên quan khi resolve thành công
+    const data = selectedError.originalData;
+    if (selectedError.type === 'PUTAWAY' && data?.huId && data?.binId) {
+      dispatch({
+        type: 'UPDATE_HANDLING_UNIT',
+        payload: { id: String(data.huId), updates: { status: 'Đã xếp kệ', location: String(data.binId) } },
+      });
+      dispatch({
+        type: 'UPDATE_BIN_STATUS',
+        payload: { id: String(data.binId), status: 'Có hàng' },
+      });
+    }
+    if (selectedError.type === 'QM_HOLD' && data?.batchId) {
+      dispatch({
+        type: 'UPDATE_BATCH_STATUS',
+        payload: { id: String(data.batchId), status: 'Blocked Stock' },
+      });
+      dispatch({
+        type: 'ADD_QUALITY_HOLD',
+        payload: {
+          id: `QH-2026-${String(Date.now()).slice(-4)}`,
+          batch: String(data.batchId),
+          reason: `Resolved from Error Queue: ${selectedError.errorReasonVi.slice(0, 80)}`,
+          plant: state.plant?.code || 'MA',
+          status: 'Đã khóa',
+          createdDate: new Date().toISOString().slice(0, 10),
+        },
+      });
+    }
+
     addActivityLog(
       state.currentUser,
       state.role?.name || '',
       'Xử lý Error Queue',
       `Đã resolve lỗi ${selectedError.transactionCode} — ${selectedError.type}`,
+      'Pending',
+      'Resolved',
+      resolutionNote || 'Đã xử lý và gửi lại thành công'
     );
     addToast('success', `Đã xử lý lỗi ${selectedError.transactionCode}`);
     setShowResolveModal(false);
@@ -102,6 +138,7 @@ export default function ErrorQueueResolverPage() {
 
   const handleConfirmCancel = () => {
     if (!selectedError) return;
+    const oldStatus = selectedError.status;
     dispatch({
       type: 'UPDATE_ERROR_STATUS',
       payload: {
@@ -115,7 +152,10 @@ export default function ErrorQueueResolverPage() {
       state.currentUser,
       state.role?.name || '',
       'Hủy Error Queue',
-      `Đã hủy lỗi ${selectedError.transactionCode}`,
+      `Đã hủy lỗi ${selectedError.transactionCode} — ${selectedError.type}`,
+      oldStatus,
+      'Cancelled',
+      'Hủy giao dịch — không xử lý thêm'
     );
     addToast('info', `Đã hủy giao dịch ${selectedError.transactionCode}`);
     setShowCancelConfirm(false);
@@ -131,6 +171,46 @@ export default function ErrorQueueResolverPage() {
       },
     });
     addToast('warning', `Đã đánh dấu cần kiểm tra: ${error.transactionCode}`);
+  };
+
+  const handleConfirmEdit = () => {
+    if (!selectedError) return;
+    dispatch({
+      type: 'UPDATE_ERROR_STATUS',
+      payload: {
+        id: selectedError.id,
+        status: 'Resolved',
+        resolvedBy: state.currentUser,
+        resolution: `Đã sửa dữ liệu và gửi lại: ${JSON.stringify(editData)}`,
+      },
+    });
+    // Apply edits to related entities
+    if (selectedError.type === 'PUTAWAY' && editData?.huId && editData?.binId) {
+      dispatch({
+        type: 'UPDATE_HANDLING_UNIT',
+        payload: { id: String(editData.huId), updates: { status: 'Đã xếp kệ', location: String(editData.binId) } },
+      });
+      dispatch({
+        type: 'UPDATE_BIN_STATUS',
+        payload: { id: String(editData.binId), status: 'Có hàng' },
+      });
+    }
+    if (selectedError.type === 'QM_HOLD' && editData?.batchId) {
+      dispatch({
+        type: 'UPDATE_BATCH_STATUS',
+        payload: { id: String(editData.batchId), status: 'Blocked Stock' },
+      });
+    }
+    addActivityLog(
+      state.currentUser, state.role?.name || '',
+      'Sửa & Gửi lại Error Queue',
+      `Đã sửa dữ liệu lỗi ${selectedError.transactionCode} và gửi lại thành công`,
+      'Pending', 'Resolved',
+      `Dữ liệu sửa: ${JSON.stringify(editData)}`
+    );
+    addToast('success', `Đã sửa và gửi lại lỗi ${selectedError.transactionCode}`);
+    setShowEditModal(false);
+    setSelectedError(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -263,18 +343,27 @@ export default function ErrorQueueResolverPage() {
                   <div className="w-4 h-4 flex items-center justify-center shrink-0 mt-0.5">
                     <i className="ri-alert-line text-xs text-ant-warning" />
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-ant-warning">Dữ liệu cần xác minh</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-ant-warning">Dữ liệu cần xác minh — Conflict</p>
                     <p className="text-xxs text-ant-text-secondary mt-1">
                       Giao dịch khác đã xử lý pallet này trước. Vui lòng kiểm tra lịch sử trước khi gửi lại.
                     </p>
-                    {error.history
-                      .filter((h) => h.action.includes('trước'))
-                      .map((h, i) => (
-                        <p key={i} className="text-xxs text-ant-text-secondary mt-1 font-mono">
-                          → {h.action} · {h.timestamp} · {h.user}
+                    <div className="mt-2 space-y-1">
+                      <p className="text-xxs text-ant-text-secondary font-medium">Thứ tự giao dịch:</p>
+                      {error.history.map((h, i) => (
+                        <p key={i} className="text-xxs text-ant-text-secondary flex items-center gap-1.5">
+                          <span className="w-4 h-4 rounded-full bg-ant-qm/20 flex items-center justify-center shrink-0">
+                            <span className="text-[9px] font-bold text-ant-qm">{i + 1}</span>
+                          </span>
+                          <span className="font-mono">{h.timestamp}</span>
+                          <span className="font-medium">{h.action}</span>
+                          <span className="text-ant-text-secondary/60">· {h.user}</span>
+                          {i === 0 && (
+                            <span className="text-xxs px-1 py-0.5 rounded bg-ant-sx/10 text-ant-sx font-bold">Thực hiện trước</span>
+                          )}
                         </p>
                       ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -327,6 +416,15 @@ export default function ErrorQueueResolverPage() {
                     <i className="ri-flag-line text-xs" />
                   </div>
                   Cần kiểm tra
+                </button>
+                <button
+                  onClick={() => { setSelectedError(error); setEditData({...error.originalData} as Record<string, string>); setShowEditModal(true); }}
+                  className="h-9 px-3 rounded-lg bg-ant-nk/10 text-ant-nk text-xs font-medium hover:bg-ant-nk/20 transition-colors flex items-center gap-1"
+                >
+                  <div className="w-4 h-4 flex items-center justify-center">
+                    <i className="ri-edit-line text-xs" />
+                  </div>
+                  Sửa dữ liệu
                 </button>
                 <button
                   onClick={() => { setSelectedError(error); setShowHistory(true); }}
@@ -415,6 +513,66 @@ export default function ErrorQueueResolverPage() {
         </div>
       )}
 
+      {/* Edit Data Modal */}
+      {showEditModal && selectedError && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-ant-card rounded-2xl p-5 w-full max-w-sm animate-slide-up max-h-[80vh] overflow-y-auto">
+            <h3 className="text-sm font-bold text-ant-text mb-1">Sửa dữ liệu giao dịch</h3>
+            <p className="text-xs text-ant-text-secondary mb-3">
+              Chỉnh sửa dữ liệu cho <span className="font-mono font-bold">{selectedError.transactionCode}</span> trước khi gửi lại
+            </p>
+
+            <div className="space-y-3">
+              {selectedError.type === 'PUTAWAY' && (
+                <>
+                  <EditField label="Mã HU (pallet)" value={editData?.huId as string || ''} onChange={(v) => setEditData((p) => ({ ...p, huId: v }))} />
+                  <EditField label="Mã Bin (ô kệ)" value={editData?.binId as string || ''} onChange={(v) => setEditData((p) => ({ ...p, binId: v }))} />
+                  <EditField label="Số lượng (qty)" value={editData?.qty as string || ''} onChange={(v) => setEditData((p) => ({ ...p, qty: v }))} type="number" />
+                </>
+              )}
+              {selectedError.type === 'QM_HOLD' && (
+                <>
+                  <EditField label="Mã Batch" value={editData?.batchId as string || ''} onChange={(v) => setEditData((p) => ({ ...p, batchId: v }))} />
+                  <EditField label="Mã lỗi (defectCode)" value={editData?.defectCode as string || ''} onChange={(v) => setEditData((p) => ({ ...p, defectCode: v }))} />
+                </>
+              )}
+              <div>
+                <label className="text-xs font-medium text-ant-text-secondary mb-1 block">Lý do sửa</label>
+                <textarea
+                  value={editData?.reason as string || ''}
+                  onChange={(e) => setEditData((p) => ({ ...p, reason: e.target.value }))}
+                  placeholder="Nhập lý do chỉnh sửa dữ liệu..."
+                  maxLength={500}
+                  className="w-full p-2.5 rounded-lg border border-gray-200 text-sm text-ant-text bg-ant-bg resize-none h-16 focus:outline-none focus:border-ant-nk"
+                />
+              </div>
+            </div>
+
+            <div className="bg-ant-nk/5 rounded-lg p-3 mt-3 border border-ant-nk/10">
+              <p className="text-xxs text-ant-text-secondary">
+                <i className="ri-information-line mr-1 text-ant-nk" />
+                Sau khi sửa và gửi lại, dữ liệu sẽ được cập nhật vào hệ thống và giao dịch sẽ chuyển trạng thái Resolved.
+              </p>
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="flex-1 h-10 rounded-xl border border-gray-200 text-sm font-medium text-ant-text-secondary whitespace-nowrap"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirmEdit}
+                className="flex-1 h-10 rounded-xl bg-ant-nk text-white text-sm font-bold whitespace-nowrap"
+              >
+                <i className="ri-check-line mr-1" />Sửa & Gửi lại
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* History Modal */}
       {showHistory && selectedError && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
@@ -443,6 +601,20 @@ export default function ErrorQueueResolverPage() {
       )}
 
       <div className="h-4" />
+    </div>
+  );
+}
+
+function EditField({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+  return (
+    <div>
+      <label className="text-xs font-medium text-ant-text-secondary mb-1 block">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full h-10 rounded-lg border border-gray-200 px-3 text-sm font-mono text-ant-text bg-ant-bg focus:outline-none focus:border-ant-nk"
+      />
     </div>
   );
 }

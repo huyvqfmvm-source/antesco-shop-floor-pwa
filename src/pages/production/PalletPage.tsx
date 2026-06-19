@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useApp } from '@/store/AppContext';
+import { useApp, hasPermission, getPermissionExplanation } from '@/store/AppContext';
+import PermissionBanner from '@/components/base/PermissionBanner';
 
 export default function ProductionPalletPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +14,8 @@ export default function ProductionPalletPage() {
   const [creating, setCreating] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [generatedHu, setGeneratedHu] = useState('');
+
+  const canPallet = hasPermission(state.role?.id, 'PRODUCTION_PALLET');
 
   if (!order) {
     return (
@@ -28,9 +31,8 @@ export default function ProductionPalletPage() {
   }
 
   const wipQty = order.wipQty || 0;
-  const cartonWeight = 20; // KG per carton (80 thùng = 1600 KG → 20 KG/thùng)
+  const cartonWeight = 20;
 
-  // Sync carton and kg
   const updateKg = (kg: number) => {
     setPalletKg(Math.max(0, kg));
     setCartonCount(Math.round(kg / cartonWeight));
@@ -41,6 +43,10 @@ export default function ProductionPalletPage() {
   };
 
   const handleCreatePallet = () => {
+    if (!canPallet) {
+      addToast('error', 'Bạn không có quyền thực hiện thao tác này.');
+      return;
+    }
     if (palletKg <= 0) {
       addToast('error', 'Vui lòng nhập số lượng pallet hợp lệ');
       return;
@@ -109,6 +115,13 @@ export default function ProductionPalletPage() {
           WIP hiện có: {wipQty.toLocaleString()} KG · {order.currentOperation || 'Chưa có WIP'}
         </p>
       </div>
+
+      <PermissionBanner
+        module="Sản xuất — Tạo Pallet BTP"
+        moduleIcon="ri-stack-line"
+        moduleColor="sx"
+        requiredPermissions={['PRODUCTION_PALLET', 'PRODUCTION_VIEW']}
+      />
 
       {/* Pallet Info Card */}
       <div className="bg-ant-card rounded-xl border border-gray-100 p-4">
@@ -195,47 +208,49 @@ export default function ProductionPalletPage() {
       </div>
 
       {/* Create Button */}
-      <button
-        onClick={handleCreatePallet}
-        disabled={creating || palletKg <= 0 || palletKg > wipQty}
-        className={`w-full px-4 py-4 rounded-xl text-white text-base font-bold flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${
-          creating || palletKg <= 0 || palletKg > wipQty
-            ? 'bg-gray-300 cursor-not-allowed'
-            : 'bg-ant-sx hover:bg-ant-sx-dark'
-        }`}
-      >
-        {creating ? (
-          <>
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Đang tạo pallet...
-          </>
-        ) : (
-          <>
-            <div className="w-6 h-6 flex items-center justify-center">
-              <i className="ri-stack-line text-lg" />
-            </div>
-            Tạo pallet BTP — {cartonCount} thùng · {palletKg.toLocaleString()} KG
-          </>
-        )}
-      </button>
+      {canPallet ? (
+        <button
+          onClick={handleCreatePallet}
+          disabled={creating || palletKg <= 0 || palletKg > wipQty}
+          className={`w-full px-4 py-4 rounded-xl text-white text-base font-bold flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${
+            creating || palletKg <= 0 || palletKg > wipQty
+              ? 'bg-gray-300 cursor-not-allowed'
+              : 'bg-ant-sx hover:bg-ant-sx-dark'
+          }`}
+        >
+          {creating ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Đang tạo pallet...
+            </>
+          ) : (
+            <>
+              <div className="w-6 h-6 flex items-center justify-center">
+                <i className="ri-stack-line text-lg" />
+              </div>
+              Tạo pallet BTP — {cartonCount} thùng · {palletKg.toLocaleString()} KG
+            </>
+          )}
+        </button>
+      ) : (
+        <div className="bg-ant-warning/10 rounded-xl p-4 border border-ant-warning/20">
+          <p className="text-xs text-ant-warning font-medium">{getPermissionExplanation('PRODUCTION_PALLET')}</p>
+        </div>
+      )}
 
       {/* QR Label Modal */}
       {showQrModal && (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowQrModal(false)} />
           <div className="relative w-full max-w-mobile bg-ant-card rounded-t-2xl sm:rounded-2xl overflow-hidden animate-slide-up">
-            {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <h3 className="text-sm font-bold text-ant-text">Tem QR Pallet BTP</h3>
               <button onClick={() => setShowQrModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">
                 <i className="ri-close-line text-lg text-ant-text-secondary" />
               </button>
             </div>
-
-            {/* QR Content */}
             <div className="p-4">
               <div className="bg-ant-bg rounded-xl p-4 space-y-3">
-                {/* QR Code Placeholder */}
                 <div className="bg-white rounded-xl border-2 border-dashed border-ant-sx/30 p-4 flex items-center justify-center">
                   <div className="w-40 h-40 bg-gray-900 rounded-lg flex items-center justify-center relative overflow-hidden">
                     <div className="absolute inset-0 grid grid-cols-8 grid-rows-8 gap-0.5 p-3">
@@ -251,8 +266,6 @@ export default function ProductionPalletPage() {
                     </div>
                   </div>
                 </div>
-
-                {/* Info */}
                 <div className="text-center space-y-2">
                   <p className="text-sm font-mono font-bold text-ant-text">{generatedHu}</p>
                   <p className="text-xs text-ant-sx font-medium">BTP-XOAI-{order.plant} — Pallet BTP xoài IQF</p>
@@ -293,8 +306,6 @@ export default function ProductionPalletPage() {
                   </div>
                 </div>
               </div>
-
-              {/* Print Button */}
               <button
                 onClick={() => {
                   addToast('success', 'Đã gửi lệnh in tem QR — máy in ZT410');

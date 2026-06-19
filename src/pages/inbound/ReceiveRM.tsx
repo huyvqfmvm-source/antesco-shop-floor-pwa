@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useApp } from '@/store/AppContext';
+import { useApp, hasPermission } from '@/store/AppContext';
+import PermissionBanner from '@/components/base/PermissionBanner';
 
 export default function ReceiveRMPage() {
   const { state, dispatch, addToast, addActivityLog, simulateAction } = useApp();
@@ -87,14 +88,6 @@ export default function ReceiveRMPage() {
     );
   }, [poNumber, supplier, licensePlate, grossWeight, tareWeight, netWeight, gradeI, gradeII, reject, qcStatus, totalGrade, state.currentUser, state.role?.name, state.plant?.code, simulateAction, addToast, dispatch, addActivityLog, navigate]);
 
-  const handleQuickFill = () => {
-    setTareWeight(120);
-    setGradeI(85);
-    setGradeII(10);
-    setReject(5);
-    setQcStatus('Đạt');
-  };
-
   return (
     <div className="min-h-screen bg-ant-bg flex flex-col">
       {/* Header */}
@@ -124,6 +117,14 @@ export default function ReceiveRMPage() {
         </div>
         <p className="text-xs font-medium text-ant-text-secondary text-center mt-2">{steps[step]}</p>
       </div>
+
+      <PermissionBanner
+        module="Nhập kho — Tiếp nhận nguyên liệu"
+        moduleIcon="ri-archive-line"
+        moduleColor="nk"
+        requiredPermissions={['INBOUND_RECEIVE_RM', 'INBOUND_VIEW']}
+        className="mx-4 mt-3"
+      />
 
       <main className="flex-1 overflow-y-auto p-4">
         {/* Step 0: Quét PO */}
@@ -364,13 +365,6 @@ export default function ReceiveRMPage() {
                 )}
               </div>
             </div>
-
-            <button
-              onClick={handleQuickFill}
-              className="w-full py-2.5 rounded-xl border border-dashed border-ant-sx/40 text-xs font-medium text-ant-sx active:scale-[0.98] transition-all whitespace-nowrap"
-            >
-              <i className="ri-flashlight-line mr-1" /> Điền nhanh dữ liệu mẫu (85/10/5)
-            </button>
 
             <div className="flex gap-3">
               <button

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp, hasPermission } from '@/store/AppContext';
 import StatusBadge from '@/components/base/StatusBadge';
+import PermissionBanner from '@/components/base/PermissionBanner';
 
 const PO_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; variant: 'success' | 'sync' | 'warning' | 'error' | 'offline' | 'default' }> = {
   CRTD: { label: 'Đã tạo', color: 'text-ant-qm', bg: 'bg-ant-qm/10', variant: 'default' },
@@ -77,6 +78,13 @@ export default function ProductionPage() {
       </header>
 
       <main className="flex-1 overflow-y-auto custom-scrollbar">
+        <PermissionBanner
+          module="Sản xuất"
+          moduleIcon="ri-tools-line"
+          moduleColor="sx"
+          requiredPermissions={['PRODUCTION_CREATE_ORDER', 'PRODUCTION_WIP', 'PRODUCTION_PALLET', 'PRODUCTION_CONFIRM_FG', 'PRODUCTION_MATERIAL', 'PRODUCTION_VIEW']}
+          className="mx-4 mt-3"
+        />
         <div className="p-4 space-y-4">
           {/* Status Summary Chips */}
           <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">

@@ -79,7 +79,6 @@ export default function PutawayPage() {
         user: state.currentUser,
         role: state.role?.name || '',
         plant: state.plant?.code || 'MA',
-        shift: state.shift?.name || '',
         huId: scannedPallet,
         binId: scannedBin,
         createdAt: timestamp,
@@ -93,7 +92,7 @@ export default function PutawayPage() {
         dispatch({ type: 'ADD_OFFLINE_QUEUE', payload: queueItem });
         dispatch({
           type: 'UPDATE_HANDLING_UNIT',
-          payload: { id: scannedPallet, updates: { status: 'Chờ đồng bộ', location: scannedBin } },
+          payload: { id: scannedPallet, updates: { status: 'Chờ đồng bộ putaway', location: scannedBin } },
         });
         dispatch({
           type: 'UPDATE_BIN_STATUS',
@@ -105,7 +104,7 @@ export default function PutawayPage() {
           'Putaway (Offline Queue)',
           `${scannedPallet} → ${scannedBin}`,
           'Chờ putaway',
-          'Chờ đồng bộ',
+          'Chờ đồng bộ putaway',
           'Lưu vào Offline Queue — MIGO-311'
         );
         addToast('warning', 'Đã lưu vào Offline Queue. Sẽ đồng bộ khi có mạng.');
@@ -141,7 +140,7 @@ export default function PutawayPage() {
     }
   }, [isOffline, scannedPallet, scannedBin, state, simulateAction, dispatch, addActivityLog, addToast, navigate]);
 
-  const btnSize = coldUI ? 'h-16 text-base' : 'h-12 text-sm';
+  const btnSize = coldUI ? 'h-16 text-base' : 'h-14 text-sm';
   const iconSize = coldUI ? 'text-2xl' : 'text-lg';
 
   // No permission screen

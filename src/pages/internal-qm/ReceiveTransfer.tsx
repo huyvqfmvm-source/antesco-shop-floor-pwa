@@ -46,7 +46,7 @@ export default function ReceiveTransferPage() {
       `ST-2026-0089 — ${scannedPallets.length}/${MOCK_PALLETS.length} pallet nhận tại BK${missing > 0 ? `, thiếu ${missing} pallet` : ''}`,
       missing > 0 ? 'Đã nhận — Có chênh lệch, đã ghi chú' : 'Đã nhận đủ — Hoàn tất điều chuyển',
       () => {
-        dispatch({ type: 'UPDATE_TRANSFER_ORDER', payload: { id: 'ST-2026-0089', updates: { status: 'Đã nhận tại Bình Khánh' } } });
+        dispatch({ type: 'UPDATE_TRANSFER_ORDER', payload: { id: 'ST-2026-0089', updates: { status: 'Đã nhận' } } });
         scannedPallets.forEach((hu) => {
           dispatch({ type: 'UPDATE_HANDLING_UNIT', payload: { id: hu, updates: { plant: 'BK', location: 'KL-05', status: 'Chờ putaway' } } });
         });

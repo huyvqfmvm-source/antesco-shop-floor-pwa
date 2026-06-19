@@ -92,7 +92,7 @@ export const MOCK_HANDLING_UNITS = [
   { id: 'HU-2026-MA-BTP-XOAI-0001', type: 'BTP', product: 'TP0061-BTP', qty: 3200, unit: 'KG', location: 'KL-01-A1-T1', plant: 'MA', status: 'Chờ chế biến' },
   { id: 'HU-2026-BK-FG-MIT-0003', type: 'FG', product: 'TP0078', qty: 1800, unit: 'KG', location: '', plant: 'BK', status: 'Chờ putaway' },
   { id: 'HU-2026-MA-FG-TL-0008', type: 'FG', product: 'TP0042', qty: 3200, unit: 'KG', location: 'KL-02-A3-T2', plant: 'MA', status: 'Đã xếp kệ' },
-  { id: 'HU-2026-MA-FG-XN-0006', type: 'FG', product: 'TP0061', qty: 500, unit: 'KG', location: 'KL-03-B2-T3', plant: 'MA', status: 'Chờ đồng bộ' },
+  { id: 'HU-2026-MA-FG-XN-0006', type: 'FG', product: 'TP0061', qty: 500, unit: 'KG', location: 'KL-03-B2-T3', plant: 'MA', status: 'Chờ đồng bộ putaway' },
   { id: 'HU-2026-MA-FG-XN-0007', type: 'FG', product: 'TP0061', qty: 3000, unit: 'KG', location: '', plant: 'MA', status: 'Chờ nhập kho TP' },
   { id: 'HU-2026-BK-FG-MIT-0004', type: 'FG', product: 'TP0078', qty: 1200, unit: 'KG', location: '', plant: 'BK', status: 'Chờ putaway' },
   { id: 'HU-2026-MA-FG-XN-0008', type: 'FG', product: 'TP0061', qty: 3000, unit: 'KG', location: 'KL-03-B2-T3', plant: 'MA', status: 'Đã xếp kệ' },

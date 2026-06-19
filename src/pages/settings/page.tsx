@@ -378,13 +378,15 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Reset */}
-        <div className="bg-ant-card rounded-2xl border border-gray-100 p-4">
-          <h3 className="text-sm font-bold text-ant-text mb-3">Dữ liệu</h3>
-          <button onClick={() => setShowResetConfirm(true)} className="w-full px-4 py-3 rounded-xl bg-ant-error/10 text-ant-error text-sm font-bold hover:bg-ant-error/20 active:scale-[0.98] transition-all cursor-pointer">
-            <i className="ri-refresh-line mr-2" />Reset Mock Data
-          </button>
-        </div>
+        {/* Reset — Admin only */}
+        {state.role?.id === 'admin' && (
+          <div className="bg-ant-card rounded-2xl border border-gray-100 p-4">
+            <h3 className="text-sm font-bold text-ant-text mb-3">Dữ liệu</h3>
+            <button onClick={() => setShowResetConfirm(true)} className="w-full px-4 py-3 rounded-xl bg-ant-error/10 text-ant-error text-sm font-bold hover:bg-ant-error/20 active:scale-[0.98] transition-all cursor-pointer">
+              <i className="ri-refresh-line mr-2" />Reset Mock Data
+            </button>
+          </div>
+        )}
 
         <ConfirmModal isOpen={showResetConfirm} title="Reset dữ liệu mock?" message="Toàn bộ dữ liệu sẽ được đưa về trạng thái ban đầu." confirmLabel="Xác nhận Reset" confirmColor="bg-ant-error" icon="ri-refresh-line" iconColor="bg-ant-error/10 text-ant-error" onConfirm={() => { dispatch({ type: 'RESET_MOCK_DATA' }); setShowResetConfirm(false); addToast('success', 'Đã reset toàn bộ dữ liệu mock'); }} onCancel={() => setShowResetConfirm(false)} />
 

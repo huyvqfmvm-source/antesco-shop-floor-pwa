@@ -4,11 +4,12 @@ import { useApp } from '@/store/AppContext';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'Tất cả trạng thái' },
-  { value: 'Chờ nhập kho', label: 'Chờ nhập kho', color: 'bg-ant-nk/10 text-ant-nk' },
+  { value: 'Chờ nhập kho TP', label: 'Chờ nhập kho TP', color: 'bg-ant-nk/10 text-ant-nk' },
   { value: 'Chờ putaway', label: 'Chờ putaway', color: 'bg-ant-warning/10 text-ant-warning' },
   { value: 'Đã xếp kệ', label: 'Đã xếp kệ', color: 'bg-ant-sx/10 text-ant-sx' },
-  { value: 'Chờ đồng bộ', label: 'Lỗi đồng bộ', color: 'bg-ant-offline/10 text-ant-offline' },
-  { value: 'Chờ chế biến', label: 'Chờ chế biến', color: 'bg-ant-qm/10 text-ant-qm' },
+  { value: 'Chờ đồng bộ putaway', label: 'Chờ đồng bộ putaway', color: 'bg-ant-offline/10 text-ant-offline' },
+  { value: 'Đang điều chuyển', label: 'Đang điều chuyển', color: 'bg-ant-qm/10 text-ant-qm' },
+  { value: 'Blocked Stock', label: 'Blocked Stock', color: 'bg-ant-error/10 text-ant-error' },
 ];
 
 export default function PendingListPage() {
@@ -34,11 +35,15 @@ export default function PendingListPage() {
 
   const statusBadge = (status: string) => {
     switch (status) {
-      case 'Chờ nhập kho': return 'bg-ant-nk/10 text-ant-nk border-ant-nk/20';
+      case 'Chờ nhập kho': case 'Chờ nhập kho TP': return 'bg-ant-nk/10 text-ant-nk border-ant-nk/20';
       case 'Chờ putaway': return 'bg-ant-warning/10 text-ant-warning border-ant-warning/20';
       case 'Đã xếp kệ': return 'bg-ant-sx/10 text-ant-sx border-ant-sx/20';
-      case 'Chờ đồng bộ': return 'bg-ant-offline/10 text-ant-offline border-ant-offline/20';
+      case 'Chờ đồng bộ': case 'Chờ đồng bộ putaway': return 'bg-ant-offline/10 text-ant-offline border-ant-offline/20';
       case 'Chờ chế biến': return 'bg-ant-qm/10 text-ant-qm border-ant-qm/20';
+      case 'Đang điều chuyển': return 'bg-ant-qm/10 text-ant-qm border-ant-qm/20';
+      case 'Blocked Stock': return 'bg-ant-error/10 text-ant-error border-ant-error/20';
+      case 'Đã picking': return 'bg-ant-xk/10 text-ant-xk border-ant-xk/20';
+      case 'Đã xuất kho': return 'bg-ant-sx/10 text-ant-sx border-ant-sx/20';
       default: return 'bg-gray-100 text-ant-text-secondary border-gray-200';
     }
   };
@@ -205,6 +210,14 @@ export default function PendingListPage() {
 
                 {/* Action hint based on status */}
                 {hu.status === 'Chờ nhập kho' && (
+                  <Link
+                    to="/inbound/fg-receiving"
+                    className="mt-3 w-full flex items-center justify-center gap-1 py-2 rounded-lg bg-ant-nk/5 text-ant-nk text-xs font-bold active:scale-[0.98] transition-all"
+                  >
+                    <i className="ri-archive-drawer-line" /> Nhập kho ngay
+                  </Link>
+                )}
+                {hu.status === 'Chờ nhập kho TP' && (
                   <Link
                     to="/inbound/fg-receiving"
                     className="mt-3 w-full flex items-center justify-center gap-1 py-2 rounded-lg bg-ant-nk/5 text-ant-nk text-xs font-bold active:scale-[0.98] transition-all"

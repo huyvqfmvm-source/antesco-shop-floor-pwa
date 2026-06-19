@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useApp, hasPermission } from '@/store/AppContext';
-import SignatureBox from '@/components/base/SignatureBox';
+import MultiRoleSignature from '@/components/base/MultiRoleSignature';
 import PermissionBanner from '@/components/base/PermissionBanner';
+import type { SignedInfo } from '@/components/base/MultiRoleSignature';
 
 export default function FGReceivingPage() {
   const { state, dispatch, addToast, addActivityLog, simulateAction } = useApp();
@@ -17,10 +18,8 @@ export default function FGReceivingPage() {
   const [ocrResult, setOcrResult] = useState<number | null>(null);
   const [actualCount, setActualCount] = useState(0);
   const [discrepancyReason, setDiscrepancyReason] = useState('');
-  const [prodSigned, setProdSigned] = useState(false);
-  const [whSigned, setWhSigned] = useState(false);
-  const [signingProd, setSigningProd] = useState(false);
-  const [signingWh, setSigningWh] = useState(false);
+  const [prodSignInfo, setProdSignInfo] = useState<SignedInfo | null>(null);
+  const [whSignInfo, setWhSignInfo] = useState<SignedInfo | null>(null);
 
   const steps = ['Quét pallet', 'OCR bảng kê', 'Đồng kiểm', 'Ký bàn giao', 'Xác nhận'];
 
@@ -37,7 +36,7 @@ export default function FGReceivingPage() {
   const product = availableHU ? `${availableHU.product} - TP` : 'TP0061 - Xoài đông IQF xí ngầu 1.5cm';
 
   const hasDiscrepancy = ocrResult !== null && actualCount !== ocrResult && actualCount > 0;
-  const canConfirm = prodSigned && whSigned && actualCount > 0 && (!hasDiscrepancy || (hasDiscrepancy && discrepancyReason.length > 0));
+  const canConfirm = prodSignInfo !== null && whSignInfo !== null && actualCount > 0 && (!hasDiscrepancy || (hasDiscrepancy && discrepancyReason.length > 0));
 
   const canPutaway = hasPermission(state.role?.id, 'INBOUND_PUTAWAY');
   const canSignWh = hasPermission(roleId, 'INBOUND_SIGN_WH');
@@ -68,23 +67,15 @@ export default function FGReceivingPage() {
   const handleCountDown = useCallback(() => setActualCount((c) => Math.max(0, c - 1)), []);
   const handleCountInc10 = useCallback(() => setActualCount((c) => c + 10), []);
 
-  const handleSignProd = useCallback(() => {
-    setSigningProd(true);
-    setTimeout(() => {
-      setProdSigned(true);
-      setSigningProd(false);
-      addToast('success', 'Đại diện sản xuất đã ký xác nhận');
-    }, 400);
-  }, [addToast]);
+  const handleSignProd = useCallback((info: SignedInfo) => {
+    setProdSignInfo(info);
+    addActivityLog(state.currentUser, state.role?.name || '', 'Ký SX (Nhập kho TP)', `${info.signerName} · ${info.signerRole} · ${scannedHU}`);
+  }, [addActivityLog, state.currentUser, state.role?.name, scannedHU]);
 
-  const handleSignWh = useCallback(() => {
-    setSigningWh(true);
-    setTimeout(() => {
-      setWhSigned(true);
-      setSigningWh(false);
-      addToast('success', 'Thủ kho đã ký xác nhận');
-    }, 400);
-  }, [addToast]);
+  const handleSignWh = useCallback((info: SignedInfo) => {
+    setWhSignInfo(info);
+    addActivityLog(state.currentUser, state.role?.name || '', 'Ký TK (Nhập kho TP)', `${info.signerName} · ${info.signerRole} · ${scannedHU}`);
+  }, [addActivityLog, state.currentUser, state.role?.name, scannedHU]);
 
   const handleConfirm = useCallback(() => {
     if (!canConfirm) return;
@@ -103,7 +94,7 @@ export default function FGReceivingPage() {
     );
   }, [canConfirm, scannedHU, actualCount, batch, simulateAction, dispatch, addActivityLog, state.currentUser, state.role?.name, navigate, cartonWeight, mockCartons]);
 
-  const btnSize = coldUI ? 'h-16 text-base' : 'h-12 text-sm';
+  const btnSize = coldUI ? 'h-16 text-base' : 'h-14 text-sm';
   const iconSize = coldUI ? 'text-2xl' : 'text-lg';
   const cardPad = coldUI ? 'p-6' : 'p-4';
   const textSize = coldUI ? 'text-base' : 'text-sm';
@@ -356,21 +347,24 @@ export default function FGReceivingPage() {
                 </div>
               </div>
 
-              {/* Production sign */}
-              <SignatureBox
+              {/* Production sign — MultiRole */}
+              <MultiRoleSignature
                 label="Đại diện sản xuất"
                 roleLabel="Nguyễn Văn An · Công nhân SX"
-                disabled={!canSignProd && !prodSigned}
-                disabledReason="Chỉ Công nhân SX, Quản đốc hoặc Admin được ký"
+                requiredPermission="PRODUCTION_SIGN"
+                signedInfo={prodSignInfo}
+                otherSignerUsername={whSignInfo?.signerUsername}
                 onSign={handleSignProd}
-                className="mb-2"
+                className="mb-3"
               />
 
-              <SignatureBox
+              {/* WH sign — MultiRole */}
+              <MultiRoleSignature
                 label="Thủ kho"
                 roleLabel="Trần Thị Bình · Thủ kho MA"
-                disabled={!canSignWh && !whSigned}
-                disabledReason="Chỉ Thủ kho, Quản đốc hoặc Admin được ký"
+                requiredPermission="INBOUND_SIGN_WH"
+                signedInfo={whSignInfo}
+                otherSignerUsername={prodSignInfo?.signerUsername}
                 onSign={handleSignWh}
               />
             </div>

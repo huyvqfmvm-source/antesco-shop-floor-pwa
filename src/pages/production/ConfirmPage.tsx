@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useApp } from '@/store/AppContext';
+import { useApp, hasPermission, getPermissionExplanation } from '@/store/AppContext';
+import PermissionBanner from '@/components/base/PermissionBanner';
 
 export default function ProductionConfirmPage() {
   const { id } = useParams<{ id: string }>();
@@ -14,8 +15,10 @@ export default function ProductionConfirmPage() {
   const [voiceRecording, setVoiceRecording] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<{ code: string; desc: string } | null>(null);
   const [confirming, setConfirming] = useState(false);
-  const cartonWeight = 10; // 10KG/thùng
+  const cartonWeight = 10;
   const fgCartons = Math.round(fgQty / cartonWeight);
+
+  const canConfirmFg = hasPermission(state.role?.id, 'PRODUCTION_CONFIRM_FG') || hasPermission(state.role?.id, 'PRODUCTION_CREATE_ORDER');
 
   if (!order) {
     return (
@@ -32,6 +35,7 @@ export default function ProductionConfirmPage() {
 
   const wipQty = order.wipQty || 0;
   const plannedQty = order.plannedQty;
+  const hasScrapRequirement = scrapQty > 0 && scrapReason.trim().length === 0;
   const totalInput = fgQty + scrapQty;
 
   const handleVoiceToText = () => {
@@ -49,13 +53,16 @@ export default function ProductionConfirmPage() {
   };
 
   const handleConfirm = () => {
+    if (!canConfirmFg) {
+      addToast('error', 'Bạn không có quyền thực hiện thao tác này.');
+      return;
+    }
     if (fgQty <= 0) {
       addToast('error', 'Vui lòng nhập số lượng thành phẩm đạt (> 0 KG)');
       return;
     }
     setConfirming(true);
 
-    // Generate batch and HU following standard format
     const now = new Date();
     const year = now.getFullYear();
     const dayOfYear = String(Math.floor((now.getTime() - new Date(year, 0, 0).getTime()) / 86400000)).padStart(3, '0');
@@ -130,6 +137,13 @@ export default function ProductionConfirmPage() {
           Kế hoạch: {plannedQty.toLocaleString()} KG · WIP: {wipQty.toLocaleString()} KG
         </p>
       </div>
+
+      <PermissionBanner
+        module="Sản xuất — Xác nhận TP"
+        moduleIcon="ri-checkbox-circle-line"
+        moduleColor="sx"
+        requiredPermissions={['PRODUCTION_CONFIRM_FG', 'PRODUCTION_VIEW']}
+      />
 
       {/* Quantity Inputs */}
       <div className="bg-ant-card rounded-xl border border-gray-100 p-4">
@@ -293,29 +307,35 @@ export default function ProductionConfirmPage() {
       </div>
 
       {/* Confirm Button */}
-      <button
-        onClick={handleConfirm}
-        disabled={confirming || fgQty <= 0 || totalInput > wipQty}
-        className={`w-full px-4 py-4 rounded-xl text-white text-base font-bold flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${
-          confirming || fgQty <= 0 || totalInput > wipQty
-            ? 'bg-gray-300 cursor-not-allowed'
-            : 'bg-ant-sx hover:bg-ant-sx-dark'
-        }`}
-      >
-        {confirming ? (
-          <>
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Đang xác nhận...
-          </>
-        ) : (
-          <>
-            <div className="w-6 h-6 flex items-center justify-center">
-              <i className="ri-check-double-line text-lg" />
-            </div>
-            Xác nhận &amp; Sinh batch thành phẩm
-          </>
-        )}
-      </button>
+      {canConfirmFg ? (
+        <button
+          onClick={handleConfirm}
+          disabled={confirming || fgQty <= 0 || totalInput > wipQty || hasScrapRequirement}
+          className={`w-full px-4 py-4 rounded-xl text-white text-base font-bold flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${
+            confirming || fgQty <= 0 || totalInput > wipQty
+              ? 'bg-gray-300 cursor-not-allowed'
+              : 'bg-ant-sx hover:bg-ant-sx-dark'
+          }`}
+        >
+          {confirming ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Đang xác nhận...
+            </>
+          ) : (
+            <>
+              <div className="w-6 h-6 flex items-center justify-center">
+                <i className="ri-check-double-line text-lg" />
+              </div>
+              Xác nhận & Sinh batch thành phẩm
+            </>
+          )}
+        </button>
+      ) : (
+        <div className="bg-ant-warning/10 rounded-xl p-4 border border-ant-warning/20">
+          <p className="text-xs text-ant-warning font-medium">{getPermissionExplanation('PRODUCTION_CONFIRM_FG')}</p>
+        </div>
+      )}
 
       <div className="h-4" />
     </div>
