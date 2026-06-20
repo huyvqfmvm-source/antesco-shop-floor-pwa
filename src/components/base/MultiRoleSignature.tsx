@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useApp, MOCK_USERS, MOCK_ROLES, hasPermission, type PermissionAction } from '@/store/AppContext';
 
-interface SignedInfo {
+export interface SignedInfo {
   signerName: string;
   signerRole: string;
   signerUsername: string;

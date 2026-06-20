@@ -84,6 +84,7 @@ export default function PutawayPage() {
         user: state.currentUser,
         role: state.role?.name || '',
         plant: state.plant?.code || 'MA',
+        shift: state.shift?.name || '',
         huId: scannedPallet,
         binId: scannedBin,
         createdAt: timestamp,

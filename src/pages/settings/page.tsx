@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useApp, hasPermission, RBAC_PERMISSIONS, TAB_PERMISSIONS, MOCK_ROLES, MOCK_PLANTS, type PermissionAction } from '@/store/AppContext';
+import { useApp, RBAC_PERMISSIONS, MOCK_ROLES, MOCK_PLANTS, type PermissionAction } from '@/store/AppContext';
 import StatusBadge from '@/components/base/StatusBadge';
 import ConfirmModal from '@/components/base/ConfirmModal';
 import type { NetworkStatus } from '@/store/AppContext';
@@ -58,6 +58,44 @@ const PERMISSION_LABELS: Record<string, string> = {
 };
 
 const ALL_PERMISSION_ACTIONS = Array.from(new Set(PERMISSION_GROUPS.flatMap((group) => group.actions)));
+const ALL_TABS = ['production', 'inbound', 'outbound', 'internal-qm'];
+const GROUP_TAB_MAP: Record<string, string[]> = {
+  'Sáº£n xuáº¥t': ['production'],
+  'Nháº­p kho': ['inbound'],
+  'Xuáº¥t kho': ['outbound'],
+  'Ná»™i bá»™ & QM': ['internal-qm'],
+  'Äiá»u chuyá»ƒn': ['internal-qm', 'inbound', 'outbound'],
+  'Error Queue': ['internal-qm'],
+  'Chá»©ng tá»« káº¿ toÃ¡n': ['inbound', 'outbound'],
+  Admin: ['admin'],
+};
+const TAB_LABELS: Record<string, string> = {
+  production: 'Sản xuất',
+  inbound: 'Nhập kho',
+  outbound: 'Xuất kho',
+  'internal-qm': 'Nội bộ & QM',
+};
+
+const getGroupTabs = (actions: PermissionAction[]) => {
+  const tabs = new Set<string>();
+  actions.forEach((action) => {
+    if (action.startsWith('PRODUCTION_')) tabs.add('production');
+    if (action.startsWith('INBOUND_')) tabs.add('inbound');
+    if (action.startsWith('OUTBOUND_')) tabs.add('outbound');
+    if (action.startsWith('QM_') || action === 'ERROR_QUEUE_RESOLVE') tabs.add('internal-qm');
+    if (action === 'TRANSFER_ORDER' || action === 'RECEIVE_TRANSFER') {
+      tabs.add('internal-qm');
+      tabs.add('inbound');
+      tabs.add('outbound');
+    }
+    if (action === 'VIEW_DOCUMENTS' || action === 'VIEW_INVOICE_STATUS') {
+      tabs.add('inbound');
+      tabs.add('outbound');
+    }
+    if (action === 'ADMIN_RBAC_MATRIX') tabs.add('admin');
+  });
+  return Array.from(tabs);
+};
 
 export default function SettingsPage() {
   const { state, dispatch, logout, addToast, addActivityLog, syncOfflineQueue } = useApp();
@@ -68,6 +106,7 @@ export default function SettingsPage() {
   const [adminRoleDraft, setAdminRoleDraft] = useState(state.currentUserData?.role || 'admin');
   const [adminPlantDraft, setAdminPlantDraft] = useState(state.currentUserData?.plant || 'MA');
   const [adminDepartmentDraft, setAdminDepartmentDraft] = useState(state.currentUserData?.department || '');
+  const showLegacyUserCard = false;
 
   const pendingQueueCount = state.offlineQueue.filter((q) => q.status === 'Pending').length;
 
@@ -87,9 +126,47 @@ export default function SettingsPage() {
   };
 
   const getInitChar = (name: string) => name.split(' ').pop()?.charAt(0) || '?';
-  const selectedRole = MOCK_ROLES.find((r) => r.id === rbacRole);
+  const managedTabs = useMemo(
+    () => state.role?.id === 'admin' ? ALL_TABS : (state.roleTabs[state.role?.id || ''] || []),
+    [state.role?.id, state.roleTabs]
+  );
+  const visibleRbacRoles = useMemo(() => {
+    if (state.role?.id === 'admin') return MOCK_ROLES;
+    return MOCK_ROLES.filter((role) => {
+      if (role.id === 'admin') return false;
+      const tabs = state.roleTabs[role.id] || [];
+      return tabs.some((tab) => managedTabs.includes(tab));
+    });
+  }, [managedTabs, state.role?.id, state.roleTabs]);
+  const selectedRoleId = visibleRbacRoles.some((role) => role.id === rbacRole) ? rbacRole : (visibleRbacRoles[0]?.id || rbacRole);
+  const selectedRole = MOCK_ROLES.find((r) => r.id === selectedRoleId);
+  const selectedRolePermissions = state.rolePermissions[selectedRoleId] || [];
+  const selectedRoleTabs = state.roleTabs[selectedRoleId] || [];
   const adminSelectedUser = state.registeredUsers.find((u) => u.username === selectedUser) || state.registeredUsers[0];
-  const effectiveAdminActions = adminRoleDraft === 'admin' ? ALL_PERMISSION_ACTIONS : (RBAC_PERMISSIONS[adminRoleDraft] || []);
+  const effectiveAdminActions = adminRoleDraft === 'admin' ? ALL_PERMISSION_ACTIONS : (state.rolePermissions[adminRoleDraft] || RBAC_PERMISSIONS[adminRoleDraft] || []);
+  const canEditSelectedRole = state.role?.id === 'admin' || selectedRoleId !== 'admin';
+
+  const handleToggleRoleTab = (tab: string) => {
+    if (!selectedRole || selectedRole.id === 'admin') return;
+    const nextTabs = selectedRoleTabs.includes(tab)
+      ? selectedRoleTabs.filter((item) => item !== tab)
+      : [...selectedRoleTabs, tab];
+    dispatch({ type: 'UPDATE_ROLE_PERMISSIONS', payload: { roleId: selectedRole.id, tabs: nextTabs, permissions: selectedRolePermissions } });
+  };
+
+  const handleTogglePermission = (action: PermissionAction) => {
+    if (!selectedRole || selectedRole.id === 'admin') return;
+    const nextPermissions = selectedRolePermissions.includes(action)
+      ? selectedRolePermissions.filter((item) => item !== action)
+      : [...selectedRolePermissions, action];
+    const nextTabs = [...new Set([
+      ...selectedRoleTabs,
+      ...PERMISSION_GROUPS
+        .filter((group) => group.actions.includes(action))
+        .flatMap((group) => getGroupTabs(group.actions)),
+    ].filter((tab) => ALL_TABS.includes(tab)))];
+    dispatch({ type: 'UPDATE_ROLE_PERMISSIONS', payload: { roleId: selectedRole.id, tabs: nextTabs, permissions: nextPermissions } });
+  };
 
   const handleSelectAdminUser = (username: string) => {
     const user = state.registeredUsers.find((u) => u.username === username);
@@ -134,6 +211,7 @@ export default function SettingsPage() {
 
       <main className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
         {/* User Card */}
+        {showLegacyUserCard && (
         <div className="bg-ant-card rounded-2xl border border-gray-100 p-4">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-12 h-12 rounded-2xl bg-ant-sx flex items-center justify-center shrink-0">
@@ -162,6 +240,8 @@ export default function SettingsPage() {
             <i className="ri-user-line" />Xem thông tin tài khoản
           </Link>
         </div>
+
+        )}
 
         {state.role?.id === 'admin' && adminSelectedUser && (
           <div className="bg-ant-card rounded-2xl border border-ant-nk/20 overflow-hidden">
@@ -242,7 +322,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
-                  <MetricCell label="Tabs" value={(TAB_PERMISSIONS[adminRoleDraft] || []).length} icon="ri-layout-grid-line" />
+                  <MetricCell label="Tabs" value={(state.roleTabs[adminRoleDraft] || []).length} icon="ri-layout-grid-line" />
                   <MetricCell label="Actions" value={effectiveAdminActions.length} icon="ri-key-2-line" />
                   <MetricCell label="Offline" value={effectiveAdminActions.filter((a) => a === 'INBOUND_PUTAWAY' || a === 'QM_HOLD').length} icon="ri-wifi-off-line" />
                 </div>
@@ -263,12 +343,12 @@ export default function SettingsPage() {
 
           {/* Role selector */}
           <div className="flex gap-2 overflow-x-auto pb-2 mb-4 custom-scrollbar">
-            {MOCK_ROLES.map((role) => (
+            {visibleRbacRoles.map((role) => (
               <button
                 key={role.id}
                 onClick={() => setRbacRole(role.id)}
                 className={`h-10 px-3.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 inline-flex items-center justify-center transition-all ${
-                  rbacRole === role.id
+                  selectedRoleId === role.id
                     ? 'bg-ant-qm text-white shadow-sm shadow-ant-qm/20'
                     : 'bg-gray-100 text-ant-text-secondary hover:bg-gray-200'
                 }`}
@@ -282,45 +362,77 @@ export default function SettingsPage() {
             <div className="space-y-3">
               {/* Role summary */}
               <div className="bg-ant-qm/5 rounded-xl p-3 border border-ant-qm/10">
-                <p className="text-sm font-bold text-ant-text">{selectedRole.name}</p>
-                <p className="text-xs text-ant-text-secondary mt-0.5">
-                  Tab: {(TAB_PERMISSIONS[selectedRole.id] || []).map((t) => {
-                    const map: Record<string, string> = { production: 'Sản xuất', inbound: 'Nhập kho', outbound: 'Xuất kho', 'internal-qm': 'Nội bộ & QM' };
-                    return map[t] || t;
-                  }).join(', ') || 'Không có tab nào'}
-                </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-ant-text">{selectedRole.name}</p>
+                    <p className="text-xs text-ant-text-secondary mt-0.5">
+                      {selectedRole.id === 'admin' ? 'Toàn quyền hệ thống' : `${selectedRolePermissions.length} quyền · ${selectedRoleTabs.length} phân hệ`}
+                    </p>
+                  </div>
+                  <span className="h-8 px-3 rounded-xl bg-white text-ant-qm text-xxs font-bold inline-flex items-center whitespace-nowrap">
+                    {canEditSelectedRole && selectedRole.id !== 'admin' ? 'Có thể chỉnh' : 'Chỉ xem'}
+                  </span>
+                </div>
+                {selectedRole.id !== 'admin' && (
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {ALL_TABS.filter((tab) => state.role?.id === 'admin' || managedTabs.includes(tab)).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => handleToggleRoleTab(tab)}
+                        className={`h-9 rounded-xl text-xxs font-bold border transition-all ${
+                          selectedRoleTabs.includes(tab)
+                            ? 'bg-ant-qm text-white border-ant-qm'
+                            : 'bg-white text-ant-text-secondary border-gray-200'
+                        }`}
+                      >
+                        {TAB_LABELS[tab]}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Permission matrix by group */}
               {PERMISSION_GROUPS.map((group) => {
-                const allowed = group.actions.filter((a) => hasPermission(selectedRole.id, a));
-                const viewOnly = group.actions.filter((a) => a.endsWith('_VIEW') && hasPermission(selectedRole.id, a));
-                const canOperate = allowed.filter((a) => !a.endsWith('_VIEW'));
-                const blocked = group.actions.filter((a) => !hasPermission(selectedRole.id, a) && !a.endsWith('_VIEW'));
+                const groupTabs = getGroupTabs(group.actions);
+                const inScope = state.role?.id === 'admin' || groupTabs.some((tab) => managedTabs.includes(tab));
+                if (!inScope) return null;
 
-                if (allowed.length === 0 && blocked.length === 0) return null;
+                const enabled = selectedRole.id === 'admin' ? group.actions : group.actions.filter((a) => selectedRolePermissions.includes(a));
+                const disabled = selectedRole.id === 'admin' ? [] : group.actions.filter((a) => !selectedRolePermissions.includes(a));
+                const groupCount = enabled.length;
 
                 return (
                   <div key={group.label} className="bg-ant-bg rounded-xl p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <i className={`${group.icon} text-ant-qm text-sm`} />
-                      <span className="text-xs font-bold text-ant-text">{group.label}</span>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <i className={`${group.icon} text-ant-qm text-sm`} />
+                        <span className="text-xs font-bold text-ant-text truncate">{group.label}</span>
+                      </div>
+                      <span className="text-xxs font-bold text-ant-text-secondary whitespace-nowrap">{groupCount}/{group.actions.length}</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
-                      {canOperate.map((a) => (
-                        <span key={a} className="min-h-8 px-2.5 py-1 rounded-xl bg-ant-sx/10 text-ant-sx text-xxs font-bold border border-ant-sx/20 inline-flex items-center whitespace-nowrap">
+                      {enabled.map((a) => (
+                        <button
+                          key={a}
+                          onClick={() => handleTogglePermission(a)}
+                          disabled={!canEditSelectedRole || selectedRole.id === 'admin'}
+                          className="min-h-8 px-2.5 py-1 rounded-xl bg-ant-sx/10 text-ant-sx text-xxs font-bold border border-ant-sx/20 inline-flex items-center gap-1 whitespace-nowrap disabled:opacity-100"
+                        >
+                          <i className="ri-check-line text-xs" />
                           {PERMISSION_LABELS[a] || a}
-                        </span>
+                        </button>
                       ))}
-                      {viewOnly.map((a) => (
-                        <span key={a} className="min-h-8 px-2.5 py-1 rounded-xl bg-ant-nk/10 text-ant-nk text-xxs font-bold border border-ant-nk/20 inline-flex items-center whitespace-nowrap">
+                      {disabled.map((a) => (
+                        <button
+                          key={a}
+                          onClick={() => handleTogglePermission(a)}
+                          disabled={!canEditSelectedRole}
+                          className="min-h-8 px-2.5 py-1 rounded-xl bg-white text-ant-text-secondary/70 text-xxs font-bold border border-gray-200 inline-flex items-center gap-1 whitespace-nowrap disabled:opacity-50"
+                        >
+                          <i className="ri-add-line text-xs" />
                           {PERMISSION_LABELS[a] || a}
-                        </span>
-                      ))}
-                      {blocked.map((a) => (
-                        <span key={a} className="min-h-8 px-2.5 py-1 rounded-xl bg-gray-100 text-ant-text-secondary/50 text-xxs font-bold line-through inline-flex items-center whitespace-nowrap">
-                          {PERMISSION_LABELS[a] || a}
-                        </span>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -329,9 +441,9 @@ export default function SettingsPage() {
 
               {/* Chú thích */}
               <div className="flex flex-wrap gap-3 text-xxs text-ant-text-secondary">
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-ant-sx/20 border border-ant-sx/20" />Được thao tác</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-ant-nk/20 border border-ant-nk/20" />Chỉ xem</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-gray-100" />Bị chặn</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-ant-sx/20 border border-ant-sx/20" />Đang bật</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-white border border-gray-200" />Có thể thêm</span>
+                <span className="flex items-center gap-1"><i className="ri-lock-line" />Role ngoài phân hệ được ẩn</span>
               </div>
             </div>
           )}

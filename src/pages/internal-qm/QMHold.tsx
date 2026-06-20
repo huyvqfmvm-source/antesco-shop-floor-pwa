@@ -126,6 +126,7 @@ export default function QMHoldPage() {
         user: state.currentUser,
         role: state.role?.name || '',
         plant: state.plant?.code || 'MA',
+        shift: state.shift?.name || '',
         batchId: scanResult?.batch,
         defectCode,
         photos: photos.map((p) => `photo-${p}`),

@@ -92,6 +92,12 @@ export default [
       'no-undef': 'error',
     },
   },
+  {
+    files: ['src/store/AppContext.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
   // Only enforce this rule for the router config file to avoid false positives elsewhere.
   {
     files: ['src/router/config.tsx'],
@@ -103,4 +109,3 @@ export default [
     },
   },
 ]
-

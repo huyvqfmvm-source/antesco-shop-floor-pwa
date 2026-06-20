@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { useApp } from '@/store/AppContext';
 import StatusBadge from '@/components/base/StatusBadge';
 import ModuleCard from '@/components/feature/ModuleCard';
-import ActivityFeed from '@/components/feature/ActivityFeed';
 import ProcessStepper from '@/components/base/ProcessStepper';
 
 export default function InboundPage() {
@@ -109,7 +108,6 @@ export default function InboundPage() {
         </div>
       </div>
 
-      <ActivityFeed compact maxItems={3} />
       <div className="h-4" />
     </div>
   );

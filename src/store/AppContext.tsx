@@ -382,6 +382,22 @@ export const RBAC_PERMISSIONS: Record<string, PermissionAction[]> = {
   'admin': ['ADMIN_ALL', 'ADMIN_RBAC_MATRIX'],
 };
 
+function cloneRoleTabs(input: Record<string, string[]>): Record<string, string[]> {
+  return Object.fromEntries(Object.entries(input).map(([role, tabs]) => [role, [...tabs]]));
+}
+
+function cloneRolePermissions(input: Record<string, PermissionAction[]>): Record<string, PermissionAction[]> {
+  return Object.fromEntries(Object.entries(input).map(([role, actions]) => [role, [...actions]]));
+}
+
+let runtimeTabPermissions: Record<string, string[]> = cloneRoleTabs(TAB_PERMISSIONS);
+let runtimeRbacPermissions: Record<string, PermissionAction[]> = cloneRolePermissions(RBAC_PERMISSIONS);
+
+function applyRuntimePermissions(roleTabs: Record<string, string[]>, rolePermissions: Record<string, PermissionAction[]>): void {
+  runtimeTabPermissions = cloneRoleTabs(roleTabs);
+  runtimeRbacPermissions = cloneRolePermissions(rolePermissions);
+}
+
 // Map actions to human-readable explanation for disabled buttons
 export const PERMISSION_EXPLANATIONS: Record<string, string> = {
   'PRODUCTION_CREATE_ORDER': 'Chỉ Quản đốc/Tổ trưởng hoặc Admin được phát lệnh',
@@ -414,7 +430,7 @@ export const PERMISSION_EXPLANATIONS: Record<string, string> = {
 export function hasPermission(roleId: string | undefined, action: PermissionAction): boolean {
   if (!roleId) return false;
   if (roleId === 'admin') return true;
-  const perms = RBAC_PERMISSIONS[roleId];
+  const perms = runtimeRbacPermissions[roleId];
   if (!perms) return false;
   return perms.includes('ADMIN_ALL') || perms.includes(action);
 }
@@ -422,7 +438,7 @@ export function hasPermission(roleId: string | undefined, action: PermissionActi
 export function canAccessTab(roleId: string | undefined, tab: string): boolean {
   if (!roleId) return false;
   if (roleId === 'admin') return true;
-  const tabs = TAB_PERMISSIONS[roleId];
+  const tabs = runtimeTabPermissions[roleId];
   if (!tabs) return false;
   return tabs.includes(tab);
 }
@@ -486,6 +502,8 @@ export interface AppState {
   showSyncModal: boolean;
   showLogoutConfirm: boolean;
   registeredUsers: MockUser[];
+  roleTabs: Record<string, string[]>;
+  rolePermissions: Record<string, PermissionAction[]>;
 }
 
 const initialRegisteredUsers = [...MOCK_USERS];
@@ -541,6 +559,8 @@ const initialState: AppState = {
   showSyncModal: false,
   showLogoutConfirm: false,
   registeredUsers: initialRegisteredUsers,
+  roleTabs: cloneRoleTabs(TAB_PERMISSIONS),
+  rolePermissions: cloneRolePermissions(RBAC_PERMISSIONS),
 };
 
 type PersistedAppState = Omit<AppState, 'toasts' | 'syncProgress' | 'showSyncModal' | 'showLogoutConfirm' | 'networkStatus'> & {
@@ -561,7 +581,7 @@ function toPersistedState(state: AppState): PersistedAppState {
 
 function normalizePersistedState(input: Partial<AppState> | null | undefined): AppState {
   if (!input) return initialState;
-  return {
+  const normalized = {
     ...initialState,
     ...input,
     deviceId: getDeviceId(),
@@ -571,7 +591,11 @@ function normalizePersistedState(input: Partial<AppState> | null | undefined): A
     showLogoutConfirm: false,
     networkStatus: input.networkStatus === 'syncing' ? 'online' : input.networkStatus || 'online',
     registeredUsers: input.registeredUsers?.length ? input.registeredUsers : initialRegisteredUsers,
+    roleTabs: input.roleTabs ? cloneRoleTabs(input.roleTabs) : cloneRoleTabs(TAB_PERMISSIONS),
+    rolePermissions: input.rolePermissions ? cloneRolePermissions(input.rolePermissions) : cloneRolePermissions(RBAC_PERMISSIONS),
   };
+  applyRuntimePermissions(normalized.roleTabs, normalized.rolePermissions);
+  return normalized;
 }
 
 function loadPersistedState(): AppState {
@@ -651,7 +675,8 @@ type Action =
   | { type: 'ADD_CYCLE_COUNT'; payload: CycleCount }
   | { type: 'REGISTER_USER'; payload: MockUser }
   | { type: 'CHANGE_PASSWORD'; payload: { username: string; newPassword: string } }
-  | { type: 'UPDATE_USER_ACCESS'; payload: { username: string; role: string; plant: string; department?: string } };
+  | { type: 'UPDATE_USER_ACCESS'; payload: { username: string; role: string; plant: string; department?: string } }
+  | { type: 'UPDATE_ROLE_PERMISSIONS'; payload: { roleId: string; permissions: PermissionAction[]; tabs: string[] } };
 
 function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -671,12 +696,18 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, networkStatus: action.payload };
     case 'SET_LAST_SYNCED_AT':
       return { ...state, lastSyncedAt: action.payload };
-    case 'TOGGLE_HIGH_CONTRAST':
-      return { ...state, highContrast: !state.highContrast };
-    case 'TOGGLE_COLD_STORAGE_UI':
-      return { ...state, coldStorageUI: !state.coldStorageUI };
-    case 'TOGGLE_DARK_MODE':
-      return { ...state, darkMode: !state.darkMode };
+    case 'TOGGLE_HIGH_CONTRAST': {
+      const next = !state.highContrast;
+      return { ...state, highContrast: next, darkMode: next ? false : state.darkMode, coldStorageUI: next ? false : state.coldStorageUI };
+    }
+    case 'TOGGLE_COLD_STORAGE_UI': {
+      const next = !state.coldStorageUI;
+      return { ...state, coldStorageUI: next, darkMode: next ? false : state.darkMode, highContrast: next ? false : state.highContrast };
+    }
+    case 'TOGGLE_DARK_MODE': {
+      const next = !state.darkMode;
+      return { ...state, darkMode: next, highContrast: next ? false : state.highContrast, coldStorageUI: next ? false : state.coldStorageUI };
+    }
     case 'TOGGLE_SOUND':
       return { ...state, soundEnabled: !state.soundEnabled };
     case 'TOGGLE_VIBRATION':
@@ -703,6 +734,8 @@ function appReducer(state: AppState, action: Action): AppState {
         lastLocalUpdateAt: nowIso(),
         showSyncModal: false,
         showLogoutConfirm: false,
+        roleTabs: cloneRoleTabs(TAB_PERMISSIONS),
+        rolePermissions: cloneRolePermissions(RBAC_PERMISSIONS),
       };
     case 'ADD_ACTIVITY':
       return { ...state, activityLogs: [action.payload, ...state.activityLogs].slice(0, 200) };
@@ -858,6 +891,18 @@ function appReducer(state: AppState, action: Action): AppState {
         plant: updatedPlant,
       };
     }
+    case 'UPDATE_ROLE_PERMISSIONS':
+      return {
+        ...state,
+        roleTabs: {
+          ...state.roleTabs,
+          [action.payload.roleId]: [...action.payload.tabs],
+        },
+        rolePermissions: {
+          ...state.rolePermissions,
+          [action.payload.roleId]: [...action.payload.permissions],
+        },
+      };
     default:
       return state;
   }
@@ -882,6 +927,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [state, baseDispatch] = useReducer(appReducer, initialState, loadPersistedState);
   const broadcastRef = useRef<BroadcastChannel | null>(null);
   const applyingRemoteStateRef = useRef(false);
+
+  useEffect(() => {
+    applyRuntimePermissions(state.roleTabs, state.rolePermissions);
+  }, [state.roleTabs, state.rolePermissions]);
 
   const dispatch = useCallback<Dispatch<Action>>((action) => {
     baseDispatch(action);

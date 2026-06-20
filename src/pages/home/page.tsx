@@ -1,7 +1,6 @@
 import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { useApp, hasPermission, canAccessTab, getRoleHomeHint } from '@/store/AppContext';
 import StatusBadge from '@/components/base/StatusBadge';
-import ActivityFeed from '@/components/feature/ActivityFeed';
 
 export default function HomePage() {
   const { state, addToast, syncOfflineQueue, dispatch, addActivityLog } = useApp();
@@ -488,9 +487,6 @@ export default function HomePage() {
               ))}
             </div>
           </div>
-
-          {/* ========== ACTIVITY FEED (all roles) ========== */}
-          <ActivityFeed maxItems={5} />
 
           <div className="h-4" />
         </div>

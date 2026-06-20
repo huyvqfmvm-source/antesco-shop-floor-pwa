@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { useApp } from '@/store/AppContext';
 import StatusBadge from '@/components/base/StatusBadge';
 import ModuleCard from '@/components/feature/ModuleCard';
-import ActivityFeed from '@/components/feature/ActivityFeed';
 
 export default function InternalQMPage() {
   const { state } = useApp();
@@ -91,7 +90,6 @@ export default function InternalQMPage() {
         </div>
       )}
 
-      <ActivityFeed compact maxItems={5} />
       <div className="h-4" />
     </div>
   );

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/store/AppContext';
 import StatusBadge from '@/components/base/StatusBadge';
 import EmptyState from '@/components/base/EmptyState';
-import ActivityFeed from '@/components/feature/ActivityFeed';
 
 const STATUS_FILTERS = [
   { key: 'all', label: 'Tất cả' },
@@ -184,9 +183,6 @@ export default function OutboundPage() {
         )}
       </div>
 
-      <div className="px-4 pb-2">
-        <ActivityFeed compact maxItems={3} />
-      </div>
       <div className="h-4" />
     </div>
   );

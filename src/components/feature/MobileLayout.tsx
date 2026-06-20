@@ -4,14 +4,15 @@ import BottomNav from './BottomNav';
 import FloatingScanButton from './FloatingScanButton';
 import ToastContainer from './ToastContainer';
 import SyncQueueModal from './SyncQueueModal';
-import StatusBadge from '@/components/base/StatusBadge';
 import ConfirmModal from '@/components/base/ConfirmModal';
 import { Link, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function MobileLayout() {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, logout } = useApp();
   const location = useLocation();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
 
   useEffect(() => {
     if (state.isLoggedIn && state.networkStatus === 'online' && state.offlineQueue.filter((q) => q.status === 'Pending').length > 0) {
@@ -28,10 +29,13 @@ export default function MobileLayout() {
 
   const isHomeRoute = location.pathname === '/home' || location.pathname === '/';
   const isStandalonePage = location.pathname === '/login' || location.pathname === '/register';
-  const showBottomNav = !isHomeRoute && !isStandalonePage;
+  const isUtilityRoute = ['/account', '/settings', '/reports', '/accounting'].some((route) => location.pathname.startsWith(route));
+  const isModuleRoute = ['/production', '/inbound', '/outbound', '/internal-qm'].some((route) => location.pathname.startsWith(route));
+  const showBottomNav = !isHomeRoute && !isStandalonePage && !isUtilityRoute && isModuleRoute;
 
   const pendingQueueCount = state.offlineQueue.filter((q) => q.status === 'Pending').length;
   const errorQueueCount = state.errorQueue.filter((e) => e.status === 'Pending' || e.status === 'Need Review').length;
+  const notificationCount = Math.min(99, state.activityLogs.length + pendingQueueCount + errorQueueCount);
 
   const getNetVariant = () => {
     switch (state.networkStatus) {
@@ -59,6 +63,15 @@ export default function MobileLayout() {
   })();
 
   const getInitChar = (name: string) => name.split(' ').pop()?.charAt(0) || '?';
+
+  const handleLogout = () => {
+    setShowAvatarMenu(false);
+    if (pendingQueueCount > 0) {
+      dispatch({ type: 'SET_SHOW_LOGOUT_CONFIRM', payload: true });
+    } else {
+      logout();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-ant-bg md:bg-gray-100 md:flex md:justify-center md:items-start md:p-4">
@@ -88,33 +101,111 @@ export default function MobileLayout() {
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             {activeModeLabel && (
-              <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-white text-[10px] font-bold ${activeModeLabel.color}`}>
+              <span className={`hidden min-[380px]:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-white text-[10px] font-bold ${activeModeLabel.color}`}>
                 <i className={`${activeModeLabel.icon} text-[10px]`} />
                 {activeModeLabel.label}
               </span>
             )}
-            <StatusBadge variant={netStatus.variant} label={netStatus.label} pulse={state.networkStatus === 'syncing'} />
-            {pendingQueueCount > 0 && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-ant-offline/10 text-ant-offline text-[10px] font-bold border border-ant-offline/20">
-                <i className="ri-cloud-line text-[10px]" />
-                {pendingQueueCount}
-              </span>
-            )}
-            <Link to="/account" className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
-              <div className="w-5 h-5 rounded-full bg-ant-sx/20 flex items-center justify-center">
-                <span className="text-[10px] font-bold text-ant-sx">{getInitChar(state.currentUser)}</span>
-              </div>
-            </Link>
-            <Link to="/settings" className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors relative">
-              <i className="ri-settings-3-line text-base text-ant-text-secondary" />
-              {errorQueueCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-ant-error text-white text-[8px] flex items-center justify-center font-bold animate-badge-pop">
-                  {errorQueueCount > 9 ? '!' : errorQueueCount}
+            <button
+              onClick={() => { setShowNotifications((v) => !v); setShowAvatarMenu(false); }}
+              className="relative w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 active:scale-95 transition-all"
+              aria-label="Thông báo"
+            >
+              <i className="ri-notification-3-line text-lg text-ant-text-secondary" />
+              {notificationCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-ant-error text-white text-[9px] flex items-center justify-center font-bold animate-badge-pop">
+                  {notificationCount > 9 ? '9+' : notificationCount}
                 </span>
               )}
-            </Link>
+            </button>
+            <button
+              onClick={() => { setShowAvatarMenu((v) => !v); setShowNotifications(false); }}
+              className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 active:scale-95 transition-all"
+              aria-label="Menu tài khoản"
+            >
+              <div className="w-6 h-6 rounded-full bg-ant-sx/20 flex items-center justify-center">
+                <span className="text-[11px] font-bold text-ant-sx">{getInitChar(state.currentUser)}</span>
+              </div>
+            </button>
           </div>
         </header>
+
+        {showNotifications && (
+          <div className="absolute top-[calc(env(safe-area-inset-top,0px)+56px)] right-3 left-3 z-[70] rounded-2xl bg-ant-card border border-gray-100 shadow-2xl shadow-black/15 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-ant-text">Thông báo</p>
+                <p className="text-xxs text-ant-text-secondary">Hoạt động, lỗi và hàng chờ đồng bộ</p>
+              </div>
+              <button onClick={() => setShowNotifications(false)} className="w-8 h-8 rounded-xl hover:bg-gray-100">
+                <i className="ri-close-line text-ant-text-secondary" />
+              </button>
+            </div>
+            <div className="max-h-[360px] overflow-y-auto custom-scrollbar p-2">
+              {errorQueueCount > 0 && (
+                <Link to="/internal-qm/error-queue" onClick={() => setShowNotifications(false)} className="flex items-center gap-3 rounded-xl bg-ant-error/5 border border-ant-error/10 p-3 mb-2">
+                  <i className="ri-error-warning-line text-ant-error" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-ant-error">{errorQueueCount} lỗi cần xử lý</p>
+                    <p className="text-xxs text-ant-text-secondary">Mở Error Queue</p>
+                  </div>
+                </Link>
+              )}
+              {pendingQueueCount > 0 && (
+                <Link to="/settings" onClick={() => setShowNotifications(false)} className="flex items-center gap-3 rounded-xl bg-ant-offline/5 border border-ant-offline/10 p-3 mb-2">
+                  <i className="ri-cloud-line text-ant-offline" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-ant-offline">{pendingQueueCount} giao dịch chờ sync</p>
+                    <p className="text-xxs text-ant-text-secondary">Kiểm tra Offline Queue</p>
+                  </div>
+                </Link>
+              )}
+              {state.activityLogs.slice(0, 8).map((log) => (
+                <div key={log.id} className="flex gap-3 rounded-xl p-3 hover:bg-ant-bg">
+                  <div className="w-8 h-8 rounded-xl bg-ant-nk/10 text-ant-nk flex items-center justify-center shrink-0">
+                    <i className="ri-information-line text-sm" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-ant-text truncate">{log.user} · {log.action}</p>
+                    <p className="text-xxs text-ant-text-secondary line-clamp-2">{log.detail}</p>
+                    <p className="text-[10px] text-ant-text-secondary/70">{log.timestamp}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {showAvatarMenu && (
+          <div className="absolute top-[calc(env(safe-area-inset-top,0px)+56px)] right-3 z-[70] w-[min(360px,calc(100%-24px))] rounded-2xl bg-ant-card border border-gray-100 shadow-2xl shadow-black/15 overflow-hidden">
+            <div className="p-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-ant-sx text-white flex items-center justify-center font-bold">{getInitChar(state.currentUser)}</div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-ant-text truncate">{state.currentUser}</p>
+                  <p className="text-xs text-ant-text-secondary truncate">{state.role?.name} · {state.plant?.name} · {state.shift?.name}</p>
+                  <p className="text-xxs text-ant-text-secondary">Mạng: {state.networkStatus}</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-2">
+              <Link to="/account" onClick={() => setShowAvatarMenu(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-ant-bg text-sm font-semibold text-ant-text">
+                <i className="ri-user-line text-ant-text-secondary" />Tài khoản
+              </Link>
+              <Link to="/settings" onClick={() => setShowAvatarMenu(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-ant-bg text-sm font-semibold text-ant-text">
+                <i className="ri-settings-3-line text-ant-text-secondary" />Cài đặt & phân quyền
+              </Link>
+              <div className="my-2 border-t border-gray-100" />
+              <MiniToggle label="Dark" icon="ri-moon-line" active={state.darkMode} onClick={() => dispatch({ type: 'TOGGLE_DARK_MODE' })} />
+              <MiniToggle label="High Contrast" icon="ri-sun-line" active={state.highContrast} onClick={() => dispatch({ type: 'TOGGLE_HIGH_CONTRAST' })} />
+              <MiniToggle label="Cold Storage" icon="ri-snowflake-line" active={state.coldStorageUI} onClick={() => dispatch({ type: 'TOGGLE_COLD_STORAGE_UI' })} />
+              <div className="my-2 border-t border-gray-100" />
+              <button onClick={handleLogout} className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-ant-error/5 text-sm font-bold text-ant-error">
+                <i className="ri-logout-box-r-line" />Đăng xuất
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto custom-scrollbar">
@@ -140,6 +231,20 @@ export default function MobileLayout() {
         {state.showLogoutConfirm && <LogoutConfirmModal />}
       </div>
     </div>
+  );
+}
+
+function MiniToggle({ label, icon, active, onClick }: { label: string; icon: string; active: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 hover:bg-ant-bg">
+      <span className="flex items-center gap-3 text-sm font-semibold text-ant-text">
+        <i className={`${icon} text-ant-text-secondary`} />
+        {label}
+      </span>
+      <span className={`relative w-9 h-5 rounded-full transition-colors ${active ? 'bg-ant-sx' : 'bg-gray-300'}`}>
+        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${active ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+      </span>
+    </button>
   );
 }
 

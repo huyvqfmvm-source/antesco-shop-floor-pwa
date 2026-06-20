@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useApp } from '@/store/AppContext';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useApp, type PermissionAction } from '@/store/AppContext';
 
 export type ScanType = 'production_order' | 'pallet_hu' | 'batch' | 'bin' | 'outbound_delivery' | 'container_seal' | 'ocr_plate' | 'ocr_weigh' | 'ocr_production' | 'ocr_container' | 'ocr_seal' | 'voice_to_text';
 
@@ -22,6 +22,21 @@ const SCAN_OPTIONS: { type: ScanType; label: string; icon: string; color: string
   { type: 'voice_to_text', label: 'Voice-to-Text', icon: 'ri-mic-line', color: 'ant-offline' },
 ];
 
+const SCAN_PERMISSION_MAP: Record<ScanType, PermissionAction[]> = {
+  production_order: ['PRODUCTION_VIEW'],
+  pallet_hu: ['INBOUND_VIEW', 'OUTBOUND_VIEW', 'PRODUCTION_PALLET'],
+  batch: ['PRODUCTION_VIEW', 'QM_VIEW'],
+  bin: ['INBOUND_PUTAWAY', 'QM_CYCLE_COUNT'],
+  outbound_delivery: ['OUTBOUND_VIEW'],
+  container_seal: ['OUTBOUND_CONTAINER_LOADING', 'OUTBOUND_CONTAINER_CHECK', 'QM_CONTAINER_CHECK'],
+  ocr_plate: ['TRANSFER_ORDER', 'OUTBOUND_CONTAINER_LOADING'],
+  ocr_weigh: ['INBOUND_RECEIVE_RM', 'VIEW_DOCUMENTS'],
+  ocr_production: ['INBOUND_FG_RECEIVING', 'PRODUCTION_CONFIRM_FG'],
+  ocr_container: ['OUTBOUND_CONTAINER_CHECK', 'QM_CONTAINER_CHECK'],
+  ocr_seal: ['OUTBOUND_CONTAINER_CHECK', 'QM_CONTAINER_CHECK'],
+  voice_to_text: ['QM_HOLD', 'ERROR_QUEUE_RESOLVE'],
+};
+
 const MOCK_SCAN_RESULTS: Record<ScanType, ScanResult> = {
   production_order: { code: '10000456', label: 'PO: Xoài đông IQF cắt xí ngầu 1.5cm', extra: '5,000 KG · CRTD' },
   pallet_hu: { code: 'HU-2026-MA-FG-XN-0005', label: 'HU Thành phẩm', extra: 'TP0061 · 4,500 KG · KL-03-B2-T3' },
@@ -38,7 +53,7 @@ const MOCK_SCAN_RESULTS: Record<ScanType, ScanResult> = {
 };
 
 export default function ScannerModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { addToast, simulateAction } = useApp();
+  const { state, addToast, simulateAction } = useApp();
   const [step, setStep] = useState<'select' | 'scanning' | 'detected' | 'result'>('select');
   const [scanType, setScanType] = useState<ScanType | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
@@ -46,6 +61,11 @@ export default function ScannerModal({ isOpen, onClose }: { isOpen: boolean; onC
   const [usePressed, setUsePressed] = useState(false);
   const scanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const detectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const allowedScanOptions = useMemo(() => {
+    const currentRolePermissions = state.rolePermissions[state.role?.id || ''] || [];
+    if (state.role?.id === 'admin') return SCAN_OPTIONS;
+    return SCAN_OPTIONS.filter((option) => SCAN_PERMISSION_MAP[option.type].some((permission) => currentRolePermissions.includes(permission)));
+  }, [state.role?.id, state.rolePermissions]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -82,7 +102,7 @@ export default function ScannerModal({ isOpen, onClose }: { isOpen: boolean; onC
   const handleUseCode = useCallback(() => {
     if (!result || !scanType) return;
     setUsePressed(true);
-    const option = SCAN_OPTIONS.find((o) => o.type === scanType);
+    const option = allowedScanOptions.find((o) => o.type === scanType);
     const actionLabel = option?.label || scanType;
     simulateAction(
       `Quét ${actionLabel}`,
@@ -93,7 +113,7 @@ export default function ScannerModal({ isOpen, onClose }: { isOpen: boolean; onC
         onClose();
       }
     );
-  }, [result, scanType, simulateAction, onClose]);
+  }, [allowedScanOptions, result, scanType, simulateAction, onClose]);
 
   const handleUseManualCode = useCallback(() => {
     const code = manualCode.trim();
@@ -101,14 +121,14 @@ export default function ScannerModal({ isOpen, onClose }: { isOpen: boolean; onC
       addToast('warning', 'Vui lòng chọn loại mã và nhập mã cần dùng');
       return;
     }
-    const option = SCAN_OPTIONS.find((o) => o.type === scanType);
+    const option = allowedScanOptions.find((o) => o.type === scanType);
     setResult({
       code,
       label: option?.label || 'Mã quét thủ công',
       extra: 'Nhập từ máy quét cầm tay / bàn phím',
     });
     setStep('result');
-  }, [manualCode, scanType, addToast]);
+  }, [allowedScanOptions, manualCode, scanType, addToast]);
 
   const handleRescan = useCallback(() => {
     setStep('select');
@@ -121,7 +141,7 @@ export default function ScannerModal({ isOpen, onClose }: { isOpen: boolean; onC
 
   const getColor = () => {
     if (!scanType) return { primary: 'ant-sx', ring: '#16A34A' };
-    const opt = SCAN_OPTIONS.find((o) => o.type === scanType);
+    const opt = allowedScanOptions.find((o) => o.type === scanType);
     if (!opt) return { primary: 'ant-sx', ring: '#16A34A' };
     const map: Record<string, { primary: string; ring: string }> = {
       'ant-sx': { primary: 'ant-sx', ring: '#16A34A' },
@@ -163,7 +183,7 @@ export default function ScannerModal({ isOpen, onClose }: { isOpen: boolean; onC
             <div>
               <p className="text-xs text-ant-text-secondary mb-3">Chọn loại mã cần quét</p>
               <div className="grid grid-cols-2 gap-2">
-                {SCAN_OPTIONS.map((opt) => (
+                {allowedScanOptions.map((opt) => (
                   <button
                     key={opt.type}
                     onClick={() => handleSelectType(opt.type)}
@@ -193,7 +213,7 @@ export default function ScannerModal({ isOpen, onClose }: { isOpen: boolean; onC
                     className="h-11 rounded-xl border border-gray-200 bg-white px-3 text-xs font-medium text-ant-text outline-none focus:border-ant-nk"
                   >
                     <option value="">Chọn loại mã</option>
-                    {SCAN_OPTIONS.map((opt) => <option key={opt.type} value={opt.type}>{opt.label}</option>)}
+                    {allowedScanOptions.map((opt) => <option key={opt.type} value={opt.type}>{opt.label}</option>)}
                   </select>
                   <button onClick={handleUseManualCode} className="h-11 px-4 rounded-xl bg-ant-nk text-white text-xs font-bold active:scale-[0.97]">
                     Dùng

@@ -1,18 +1,45 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { hasPermission, useApp, type PermissionAction } from '@/store/AppContext';
 import ScannerModal from './ScannerModal';
+
+const SCANNER_PERMISSIONS: PermissionAction[] = [
+  'PRODUCTION_VIEW',
+  'PRODUCTION_PALLET',
+  'INBOUND_VIEW',
+  'INBOUND_PUTAWAY',
+  'INBOUND_RECEIVE_RM',
+  'INBOUND_FG_RECEIVING',
+  'OUTBOUND_VIEW',
+  'OUTBOUND_CONTAINER_LOADING',
+  'OUTBOUND_CONTAINER_CHECK',
+  'QM_VIEW',
+  'QM_CYCLE_COUNT',
+  'QM_CONTAINER_CHECK',
+  'QM_HOLD',
+  'ERROR_QUEUE_RESOLVE',
+  'TRANSFER_ORDER',
+  'VIEW_DOCUMENTS',
+];
 
 export default function FloatingScanButton() {
   const location = useLocation();
+  const { state } = useApp();
   const [pressed, setPressed] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
-  const isHome = location.pathname === '/home';
+  const hiddenRoutes = ['/settings', '/account', '/reports', '/accounting'];
+  const moduleRootRoutes = ['/production', '/inbound', '/outbound', '/internal-qm'];
+  const hasScannerAccess = SCANNER_PERMISSIONS.some((permission) => hasPermission(state.role?.id, permission));
+  const shouldHide = hiddenRoutes.some((route) => location.pathname.startsWith(route)) || !hasScannerAccess;
+  const needsBottomNavClearance = moduleRootRoutes.includes(location.pathname);
 
   const handleOpen = () => {
     setPressed(true);
     setTimeout(() => setPressed(false), 250);
     setShowScanner(true);
   };
+
+  if (shouldHide) return null;
 
   return (
     <>
@@ -24,7 +51,7 @@ export default function FloatingScanButton() {
         aria-label="Quét mã"
         style={{
           right: 'max(20px, calc((100vw - 430px) / 2 + 20px))',
-          bottom: isHome ? 'calc(env(safe-area-inset-bottom, 0px) + 24px)' : 'calc(env(safe-area-inset-bottom, 0px) + 84px)',
+          bottom: needsBottomNavClearance ? 'calc(env(safe-area-inset-bottom, 0px) + 84px)' : 'calc(env(safe-area-inset-bottom, 0px) + 24px)',
           boxShadow: '0 4px 20px rgba(22, 163, 74, 0.35), 0 1px 3px rgba(0,0,0,0.1)',
         }}
       >
