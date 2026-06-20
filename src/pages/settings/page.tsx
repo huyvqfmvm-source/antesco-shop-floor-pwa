@@ -359,9 +359,71 @@ export default function SettingsPage() {
 
         {/* UI Toggles */}
         <div className="bg-ant-card rounded-2xl border border-gray-100 p-4">
-          <h3 className="text-sm font-bold text-ant-text mb-3 flex items-center gap-2"><i className="ri-palette-line text-ant-text-secondary text-sm" />Giao diện</h3>
-          <ToggleRow label="High Contrast" desc="Tăng độ tương phản cho màn hình ngoài trời" active={state.highContrast} activeColor="bg-ant-sx" onToggle={() => dispatch({ type: 'TOGGLE_HIGH_CONTRAST' })} />
-          <ToggleRow label="Cold Storage UI" desc="Giao diện tối ưu khi đeo găng tay trong kho lạnh" active={state.coldStorageUI} activeColor="bg-ant-nk" onToggle={() => dispatch({ type: 'TOGGLE_COLD_STORAGE_UI' })} />
+          <h3 className="text-sm font-bold text-ant-text mb-3 flex items-center gap-2"><i className="ri-contrast-2-line text-ant-text-secondary text-sm" />Chế độ hiển thị</h3>
+
+          {/* Dark Mode */}
+          <div className="bg-ant-bg rounded-xl p-3 mb-3">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0 mr-3 flex-1">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="w-5 h-5 rounded-md bg-gray-900 flex items-center justify-center"><i className="ri-moon-line text-white text-xs" /></div>
+                  <p className="text-sm font-bold text-ant-text">Dark Mode</p>
+                </div>
+                <p className="text-xxs text-ant-text-secondary">Nền tối giảm mỏi mắt khi dùng lâu, tiết kiệm pin OLED</p>
+              </div>
+              <ToggleSwitch active={state.darkMode} activeColor="bg-gray-800" onToggle={() => dispatch({ type: 'TOGGLE_DARK_MODE' })} />
+            </div>
+            <div className="mt-2 flex gap-1.5">
+              <span className="h-5 px-2 rounded-md bg-gray-900 text-white text-[10px] font-medium flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-gray-700" />Nền tối</span>
+              <span className="h-5 px-2 rounded-md bg-gray-100 text-gray-600 text-[10px] font-medium flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-white border border-gray-300" />Chữ sáng</span>
+              <span className="h-5 px-2 rounded-md bg-gray-500 text-white text-[10px] font-medium flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-gray-600" />Card mờ</span>
+            </div>
+          </div>
+
+          {/* High Contrast */}
+          <div className="bg-ant-sx-light rounded-xl p-3 mb-3 border border-ant-sx/15">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0 mr-3 flex-1">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="w-5 h-5 rounded-md bg-ant-sx flex items-center justify-center"><i className="ri-sun-line text-white text-xs" /></div>
+                  <p className="text-sm font-bold text-ant-text">High Contrast</p>
+                </div>
+                <p className="text-xxs text-ant-text-secondary">Tương phản cực cao — dùng ngoài trời nắng gắt, màn hình bị chói</p>
+              </div>
+              <ToggleSwitch active={state.highContrast} activeColor="bg-ant-sx" onToggle={() => dispatch({ type: 'TOGGLE_HIGH_CONTRAST' })} />
+            </div>
+            <div className="mt-2 flex gap-1.5">
+              <span className="h-5 px-2 rounded-md bg-white text-black text-[10px] font-bold flex items-center gap-1 border-2 border-black/80"><span className="w-2 h-2 rounded-sm bg-black" />Nền trắng</span>
+              <span className="h-5 px-2 rounded-md bg-black text-white text-[10px] font-bold flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-white" />Chữ đen</span>
+              <span className="h-5 px-2 rounded-md bg-amber-400 text-black text-[10px] font-bold flex items-center gap-1 border-2 border-black"><span className="w-2 h-2 rounded-sm bg-amber-500" />CTA vàng</span>
+            </div>
+          </div>
+
+          {/* Cold Storage */}
+          <div className="bg-ant-nk-light rounded-xl p-3 border border-ant-nk/15">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0 mr-3 flex-1">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="w-5 h-5 rounded-md bg-ant-nk flex items-center justify-center"><i className="ri-snowflake-line text-white text-xs" /></div>
+                  <p className="text-sm font-bold text-ant-text">Cold Storage UI</p>
+                </div>
+                <p className="text-xxs text-ant-text-secondary">Nút to, chữ lớn, layout đơn giản — tối ưu khi đeo găng tay kho lạnh</p>
+              </div>
+              <ToggleSwitch active={state.coldStorageUI} activeColor="bg-ant-nk" onToggle={() => dispatch({ type: 'TOGGLE_COLD_STORAGE_UI' })} />
+            </div>
+            <div className="mt-2 flex gap-1.5">
+              <span className="h-5 px-2 rounded-md bg-blue-100 text-blue-700 text-[10px] font-bold flex items-center gap-1 border border-blue-200"><span className="w-2 h-2 rounded-sm bg-blue-300" />Frost</span>
+              <span className="h-5 px-2 rounded-md bg-blue-600 text-white text-[10px] font-bold flex items-center gap-1">Nút 64px</span>
+              <span className="h-5 px-2 rounded-md bg-white text-blue-700 text-[10px] font-bold flex items-center gap-1 border border-blue-200">Text XL</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Scan Feedback */}
+        <div className="bg-ant-card rounded-2xl border border-gray-100 p-4">
+          <h3 className="text-sm font-bold text-ant-text mb-3 flex items-center gap-2"><i className="ri-qr-scan-line text-ant-text-secondary text-sm" />Phản hồi khi quét</h3>
+          <ToggleRow label="Âm thanh scan" desc="Phát âm thanh khi quét thành công hoặc lỗi" active={state.soundEnabled} activeColor="bg-ant-nk" onToggle={() => dispatch({ type: 'TOGGLE_SOUND' })} />
+          <ToggleRow label="Rung khi scan" desc="Rung thiết bị khi quét thành công hoặc lỗi" active={state.vibrationEnabled} activeColor="bg-ant-xk" onToggle={() => dispatch({ type: 'TOGGLE_VIBRATION' })} />
         </div>
 
         {/* Queue Info */}
@@ -402,13 +464,19 @@ export default function SettingsPage() {
   );
 }
 
+function ToggleSwitch({ active, activeColor, onToggle }: { active: boolean; activeColor: string; onToggle: () => void }) {
+  return (
+    <button onClick={onToggle} className={`relative w-11 h-6 rounded-full transition-colors shrink-0 cursor-pointer ${active ? activeColor : 'bg-gray-300'}`}>
+      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${active ? 'translate-x-[22px]' : 'translate-x-[2px]'}`} />
+    </button>
+  );
+}
+
 function ToggleRow({ label, desc, active, activeColor, onToggle }: { label: string; desc: string; active: boolean; activeColor: string; onToggle: () => void }) {
   return (
     <div className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
       <div className="min-w-0 mr-3"><p className="text-sm font-medium text-ant-text">{label}</p><p className="text-xxs text-ant-text-secondary">{desc}</p></div>
-      <button onClick={onToggle} className={`relative w-11 h-6 rounded-full transition-colors shrink-0 cursor-pointer ${active ? activeColor : 'bg-gray-300'}`}>
-        <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${active ? 'translate-x-[22px]' : 'translate-x-[2px]'}`} />
-      </button>
+      <ToggleSwitch active={active} activeColor={activeColor} onToggle={onToggle} />
     </div>
   );
 }

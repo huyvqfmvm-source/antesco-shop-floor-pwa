@@ -195,3 +195,295 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — Nền tối, chữ sáng, giảm mỏi mắt
+   ═══════════════════════════════════════════════════════════ */
+.dark-mode {
+  --dm-bg: #0f172a;
+  --dm-card: #1e293b;
+  --dm-card-alt: #243045;
+  --dm-border: rgba(148, 163, 184, 0.12);
+  --dm-text: #e2e8f0;
+  --dm-text-secondary: #94a3b8;
+  --dm-header-bg: rgba(15, 23, 42, 0.95);
+}
+
+.dark-mode .bg-ant-bg,
+.dark-mode [class*="bg-ant-bg"] {
+  background-color: var(--dm-bg) !important;
+}
+
+.dark-mode .bg-ant-card,
+.dark-mode [class*="bg-ant-card"] {
+  background-color: var(--dm-card) !important;
+}
+
+.dark-mode .text-ant-text {
+  color: var(--dm-text) !important;
+}
+
+.dark-mode .text-ant-text-secondary {
+  color: var(--dm-text-secondary) !important;
+}
+
+.dark-mode .border-gray-100,
+.dark-mode .border-gray-50,
+.dark-mode [class*="border-gray-"] {
+  border-color: var(--dm-border) !important;
+}
+
+.dark-mode header {
+  background-color: var(--dm-header-bg) !important;
+  border-bottom-color: var(--dm-border) !important;
+}
+
+.dark-mode .bg-gray-50 {
+  background-color: #1e293b !important;
+}
+
+.dark-mode .bg-gray-100 {
+  background-color: #243045 !important;
+}
+
+.dark-mode .bg-white {
+  background-color: #1e293b !important;
+}
+
+.dark-mode .text-gray-600,
+.dark-mode .text-gray-500,
+.dark-mode .text-gray-400 {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .hover\:bg-gray-100:hover {
+  background-color: #334155 !important;
+}
+
+.dark-mode .hover\:bg-gray-200:hover {
+  background-color: #475569 !important;
+}
+
+.dark-mode input,
+.dark-mode select,
+.dark-mode textarea {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+.dark-mode input::placeholder,
+.dark-mode textarea::placeholder {
+  color: #64748b !important;
+}
+
+.dark-mode .input-field {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+/* Dark mode: skeleton loader darker */
+.dark-mode .skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200% 100%;
+}
+
+/* Dark mode: glass */
+.dark-mode .glass {
+  background: rgba(15, 23, 42, 0.85);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HIGH CONTRAST — Ngoài trời nắng gắt, tương phản cực đại
+   ═══════════════════════════════════════════════════════════ */
+.high-contrast-mode {
+  --hc-bg: #ffffff;
+  --hc-card: #ffffff;
+  --hc-text: #000000;
+  --hc-text-secondary: #1a1a1a;
+  --hc-border: #000000;
+}
+
+.high-contrast-mode .bg-ant-bg,
+.high-contrast-mode [class*="bg-ant-bg"] {
+  background-color: var(--hc-bg) !important;
+}
+
+.high-contrast-mode .bg-ant-card,
+.high-contrast-mode [class*="bg-ant-card"] {
+  background-color: var(--hc-card) !important;
+  border: 2px solid #000000 !important;
+}
+
+.high-contrast-mode .text-ant-text {
+  color: var(--hc-text) !important;
+  font-weight: 700 !important;
+}
+
+.high-contrast-mode .text-ant-text-secondary {
+  color: var(--hc-text-secondary) !important;
+  font-weight: 600 !important;
+}
+
+.high-contrast-mode .border-gray-100,
+.high-contrast-mode .border-gray-50,
+.high-contrast-mode [class*="border-gray-"] {
+  border-color: #000000 !important;
+  border-width: 2px !important;
+}
+
+.high-contrast-mode header {
+  border-bottom: 3px solid #000000 !important;
+  background-color: #ffffff !important;
+}
+
+/* High contrast: CTA buttons become amber/yellow for max visibility */
+.high-contrast-mode .bg-ant-sx {
+  background-color: #f59e0b !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border: 2px solid #000000 !important;
+}
+
+.high-contrast-mode .bg-ant-nk {
+  background-color: #f59e0b !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border: 2px solid #000000 !important;
+}
+
+.high-contrast-mode .text-ant-sx,
+.high-contrast-mode .text-ant-nk {
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+
+/* High contrast: all buttons get thick border */
+.high-contrast-mode button:not(.Toastify__close-button) {
+  font-weight: 700 !important;
+}
+
+.high-contrast-mode input,
+.high-contrast-mode select,
+.high-contrast-mode textarea {
+  border: 2px solid #000000 !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  font-weight: 600 !important;
+}
+
+.high-contrast-mode [class*="rounded-"] {
+  border-radius: 2px !important;
+}
+
+/* High contrast: badges & tags */
+.high-contrast-mode [class*="bg-ant-"][class*="/10"],
+.high-contrast-mode [class*="bg-ant-"][class*="/20"],
+.high-contrast-mode [class*="bg-ant-"][class*="/5"] {
+  background-color: #ffffff !important;
+  border: 2px solid #000000 !important;
+  color: #000000 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COLD STORAGE UI — Găng tay kho lạnh, nút to, chữ lớn
+   ═══════════════════════════════════════════════════════════ */
+.cold-storage-mode {
+  --cs-bg: #f0f9ff;
+  --cs-card: #ffffff;
+  --cs-text: #0c4a6e;
+  --cs-text-secondary: #0369a1;
+  --cs-border: #bae6fd;
+  --cs-accent: #0284c7;
+}
+
+.cold-storage-mode .bg-ant-bg,
+.cold-storage-mode [class*="bg-ant-bg"] {
+  background-color: var(--cs-bg) !important;
+}
+
+.cold-storage-mode .bg-ant-card,
+.cold-storage-mode [class*="bg-ant-card"] {
+  background-color: var(--cs-card) !important;
+  border: 2px solid var(--cs-border) !important;
+}
+
+.cold-storage-mode .text-ant-text {
+  color: var(--cs-text) !important;
+}
+
+.cold-storage-mode .text-ant-text-secondary {
+  color: var(--cs-text-secondary) !important;
+}
+
+.cold-storage-mode .border-gray-100,
+.cold-storage-mode .border-gray-50,
+.cold-storage-mode [class*="border-gray-"] {
+  border-color: var(--cs-border) !important;
+}
+
+.cold-storage-mode header {
+  background-color: #e0f2fe !important;
+  border-bottom: 2px solid var(--cs-border) !important;
+}
+
+/* Cold Storage: MEGA buttons — minimum 64px height, massive text */
+.cold-storage-mode button,
+.cold-storage-mode a[class*="rounded"],
+.cold-storage-mode [role="button"] {
+  min-height: 56px !important;
+  font-size: 1.125rem !important;
+  font-weight: 800 !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+  border-radius: 16px !important;
+  letter-spacing: 0.025em !important;
+}
+
+/* Cold Storage: extra spacing between elements */
+.cold-storage-mode .space-y-3 > * + * { margin-top: 1rem !important; }
+.cold-storage-mode .space-y-4 > * + * { margin-top: 1.25rem !important; }
+.cold-storage-mode .gap-2 { gap: 0.75rem !important; }
+.cold-storage-mode .gap-3 { gap: 1rem !important; }
+.cold-storage-mode .gap-4 { gap: 1.25rem !important; }
+
+/* Cold Storage: larger text everywhere */
+.cold-storage-mode .text-xxs { font-size: 0.8125rem !important; }
+.cold-storage-mode .text-xs { font-size: 0.9375rem !important; }
+.cold-storage-mode .text-sm { font-size: 1.0625rem !important; }
+.cold-storage-mode .text-base { font-size: 1.1875rem !important; }
+.cold-storage-mode .text-lg { font-size: 1.375rem !important; }
+
+/* Cold Storage: larger inputs */
+.cold-storage-mode input,
+.cold-storage-mode select,
+.cold-storage-mode textarea {
+  min-height: 56px !important;
+  font-size: 1.0625rem !important;
+  border-width: 2px !important;
+  border-color: var(--cs-border) !important;
+}
+
+/* Cold Storage: bigger icons */
+.cold-storage-mode .text-sm[class*="ri-"],
+.cold-storage-mode [class*="ri-"].text-sm { font-size: 1.25rem !important; }
+.cold-storage-mode .text-xs[class*="ri-"],
+.cold-storage-mode [class*="ri-"].text-xs { font-size: 1.125rem !important; }
+
+/* Cold Storage: larger cards and containers */
+.cold-storage-mode [class*="rounded-xl"] { border-radius: 20px !important; }
+.cold-storage-mode [class*="rounded-2xl"] { border-radius: 28px !important; }
+.cold-storage-mode [class*="p-3"] { padding: 1rem !important; }
+.cold-storage-mode [class*="p-4"] { padding: 1.25rem !important; }
+
+/* Cold Storage: CTA buttons become icy blue */
+.cold-storage-mode .bg-ant-sx {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+.cold-storage-mode .bg-ant-nk {
+  background-color: #0369a1 !important;
+  color: #ffffff !important;
+}

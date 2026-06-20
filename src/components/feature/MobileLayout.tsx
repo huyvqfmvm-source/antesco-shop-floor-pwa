@@ -42,12 +42,28 @@ export default function MobileLayout() {
     }
   };
   const netStatus = getNetVariant();
+
+  // Build active display mode classes
+  const modeClasses = [
+    state.darkMode ? 'dark-mode' : '',
+    state.highContrast ? 'high-contrast-mode' : '',
+    state.coldStorageUI ? 'cold-storage-mode' : '',
+  ].filter(Boolean).join(' ');
+
+  // Determine active display mode labels for badge
+  const activeModeLabel = (() => {
+    if (state.coldStorageUI) return { icon: 'ri-snowflake-line', label: 'KHO LẠNH', color: 'bg-sky-500' };
+    if (state.highContrast) return { icon: 'ri-sun-line', label: 'HIGH CONTRAST', color: 'bg-amber-500' };
+    if (state.darkMode) return { icon: 'ri-moon-line', label: 'DARK', color: 'bg-gray-700' };
+    return null;
+  })();
+
   const getInitChar = (name: string) => name.split(' ').pop()?.charAt(0) || '?';
 
   return (
     <div className="min-h-screen bg-ant-bg md:bg-gray-100 md:flex md:justify-center md:items-start md:p-4">
       {/* Full-screen app on mobile, framed preview on desktop */}
-      <div className="w-full relative min-h-screen bg-ant-bg overflow-hidden flex flex-col md:max-w-[430px] md:min-h-[calc(100vh-32px)] md:rounded-[2rem] md:shadow-2xl md:shadow-black/10 md:ring-1 md:ring-black/5">
+      <div className={`w-full relative min-h-screen bg-ant-bg overflow-hidden flex flex-col md:max-w-[430px] md:min-h-[calc(100vh-32px)] md:rounded-[2rem] md:shadow-2xl md:shadow-black/10 md:ring-1 md:ring-black/5 ${modeClasses}`}>
         {/* Desktop preview notch */}
         <div className="hidden md:flex absolute top-0 left-1/2 -translate-x-1/2 z-50 w-32 h-7 bg-black rounded-b-2xl items-center justify-center">
           <div className="w-2.5 h-2.5 rounded-full bg-gray-800 border border-gray-700" />
@@ -71,6 +87,12 @@ export default function MobileLayout() {
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
+            {activeModeLabel && (
+              <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-white text-[10px] font-bold ${activeModeLabel.color}`}>
+                <i className={`${activeModeLabel.icon} text-[10px]`} />
+                {activeModeLabel.label}
+              </span>
+            )}
             <StatusBadge variant={netStatus.variant} label={netStatus.label} pulse={state.networkStatus === 'syncing'} />
             {pendingQueueCount > 0 && (
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-ant-offline/10 text-ant-offline text-[10px] font-bold border border-ant-offline/20">

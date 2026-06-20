@@ -2,10 +2,12 @@ import { useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useApp, hasPermission } from '@/store/AppContext';
 import PermissionBanner from '@/components/base/PermissionBanner';
+import { useScanFeedback } from '@/hooks/useScanFeedback';
 import type { OfflineQueueItem } from '@/store/AppContext';
 
 export default function PutawayPage() {
   const { state, dispatch, addToast, addActivityLog, simulateAction } = useApp();
+  const { scanSuccess, scanError } = useScanFeedback();
   const navigate = useNavigate();
   const coldUI = state.coldStorageUI;
 
@@ -41,10 +43,11 @@ export default function PutawayPage() {
     setTimeout(() => {
       setScannedPallet(mockPallet);
       setPalletScanning(false);
+      scanSuccess();
       addToast('success', 'Đã quét pallet: ' + mockPallet);
       setStep(1);
     }, 700);
-  }, [addToast, mockPallet]);
+  }, [addToast, mockPallet, scanSuccess]);
 
   const handleScanBin = useCallback((manualBin?: string) => {
     setBinScanning(true);
@@ -54,17 +57,19 @@ export default function PutawayPage() {
       setBinScanning(false);
 
       if (scanned === suggestedBin) {
+        scanSuccess();
         addToast('success', 'Ô kệ đúng: ' + scanned);
         setWrongBin(false);
         setStep(2);
       } else {
+        scanError();
         setWrongBin(true);
         setVibrating(true);
         addToast('error', 'Ô kệ không đúng! Vui lòng kiểm tra lại.');
         setTimeout(() => setVibrating(false), 1200);
       }
     }, 600);
-  }, [suggestedBin, addToast]);
+  }, [suggestedBin, addToast, scanSuccess, scanError]);
 
   const handleConfirmPutaway = useCallback(() => {
     setConfirming(true);
@@ -282,6 +287,29 @@ export default function PutawayPage() {
                         </>
                       )}
                     </button>
+                  </div>
+                </div>
+
+                {/* Dùng mã mẫu */}
+                <div className={`rounded-xl border p-3 ${coldUI ? 'bg-gray-900 border-gray-800' : 'bg-ant-nk/5 border-ant-nk/20'}`}>
+                  <p className={`text-xs font-bold mb-2 ${coldUI ? 'text-gray-400' : 'text-ant-nk'}`}>
+                    <i className="ri-lightbulb-line mr-1" />Dùng mã mẫu:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {pendingPutawayHUs.slice(0, 4).map((hu) => (
+                      <button
+                        key={hu.id}
+                        onClick={() => {
+                          setScannedPallet(hu.id);
+                          scanSuccess();
+                          addToast('success', 'Đã chọn pallet: ' + hu.id);
+                          setStep(1);
+                        }}
+                        className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all active:scale-95 whitespace-nowrap ${coldUI ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-white border border-ant-nk/20 text-ant-nk hover:bg-ant-nk/5'}`}
+                      >
+                        {hu.id}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </>

@@ -16,7 +16,7 @@ import {
   MOCK_RM_RECEIPTS,
   MOCK_CYCLE_COUNTS,
   MOCK_DEFECT_CODES,
-} from '@/mocks/data';
+} from '@/mocks/extended';
 import type { MockUser } from '@/mocks/data';
 
 export interface Role { id: string; name: string; }
@@ -465,6 +465,9 @@ export interface AppState {
   lastLocalUpdateAt: string;
   highContrast: boolean;
   coldStorageUI: boolean;
+  darkMode: boolean;
+  soundEnabled: boolean;
+  vibrationEnabled: boolean;
   productionOrders: ProductionOrder[];
   batches: Batch[];
   handlingUnits: HandlingUnit[];
@@ -517,6 +520,9 @@ const initialState: AppState = {
   lastLocalUpdateAt: nowIso(),
   highContrast: false,
   coldStorageUI: false,
+  darkMode: false,
+  soundEnabled: true,
+  vibrationEnabled: true,
   productionOrders: MOCK_PRODUCTION_ORDERS,
   batches: MOCK_BATCHES,
   handlingUnits: MOCK_HANDLING_UNITS,
@@ -611,6 +617,9 @@ type Action =
   | { type: 'SET_LAST_SYNCED_AT'; payload: string }
   | { type: 'TOGGLE_HIGH_CONTRAST' }
   | { type: 'TOGGLE_COLD_STORAGE_UI' }
+  | { type: 'TOGGLE_DARK_MODE' }
+  | { type: 'TOGGLE_SOUND' }
+  | { type: 'TOGGLE_VIBRATION' }
   | { type: 'RESET_MOCK_DATA' }
   | { type: 'ADD_ACTIVITY'; payload: ActivityLog }
   | { type: 'ADD_OFFLINE_QUEUE'; payload: OfflineQueueItem }
@@ -666,6 +675,12 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, highContrast: !state.highContrast };
     case 'TOGGLE_COLD_STORAGE_UI':
       return { ...state, coldStorageUI: !state.coldStorageUI };
+    case 'TOGGLE_DARK_MODE':
+      return { ...state, darkMode: !state.darkMode };
+    case 'TOGGLE_SOUND':
+      return { ...state, soundEnabled: !state.soundEnabled };
+    case 'TOGGLE_VIBRATION':
+      return { ...state, vibrationEnabled: !state.vibrationEnabled };
     case 'RESET_MOCK_DATA':
       return {
         ...state,

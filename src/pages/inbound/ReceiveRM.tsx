@@ -2,9 +2,11 @@ import { useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useApp, hasPermission } from '@/store/AppContext';
 import PermissionBanner from '@/components/base/PermissionBanner';
+import { useScanFeedback } from '@/hooks/useScanFeedback';
 
 export default function ReceiveRMPage() {
   const { state, dispatch, addToast, addActivityLog, simulateAction } = useApp();
+  const { scanSuccess } = useScanFeedback();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(0);
@@ -30,22 +32,24 @@ export default function ReceiveRMPage() {
     setScanning(true);
     setTimeout(() => {
       setScanning(false);
+      scanSuccess();
       addToast('success', 'Đã quét PO-2026-00089 — Xoài cát tươi');
       setStep(1);
     }, 800);
-  }, [addToast]);
+  }, [addToast, scanSuccess]);
 
   const handleOCR = useCallback(() => {
     setOcrScanning(true);
     setTimeout(() => {
       setOcrScanning(false);
+      scanSuccess();
       setLicensePlate('67C-123.45');
       setGrossWeight(8500);
       setCameraImage('mock-camera');
       setWeighImage('mock-weigh');
       addToast('success', 'OCR thành công: Biển số 67C-123.45 · GW 8,500 KG');
     }, 1000);
-  }, [addToast]);
+  }, [addToast, scanSuccess]);
 
   const handleConfirmReceipt = useCallback(() => {
     if (totalGrade !== 100) {

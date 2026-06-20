@@ -285,7 +285,7 @@ export default function HomePage() {
                   <QuickBtn icon="ri-error-warning-line" color="error" label="Error Queue" onClick={() => navigate('/internal-qm/error-queue')} />
                   <QuickBtn icon="ri-arrow-up-down-line" color="xk" label="Override FEFO" onClick={() => navigate('/outbound/fefo-picking/OD-2026-0098')} />
                   <QuickBtn icon="ri-shield-check-line" color="qm" label="QM Hold" onClick={() => navigate('/internal-qm/qm-hold')} />
-                  <QuickBtn icon="ri-file-chart-line" color="nk" label="Báo cáo ca" onClick={() => navigate('/production')} />
+                  <QuickBtn icon="ri-file-chart-line" color="nk" label="Báo cáo ca" onClick={() => navigate('/reports')} />
                 </div>
               </div>
 
@@ -365,6 +365,7 @@ export default function HomePage() {
                   <QuickBtn icon="ri-bill-line" color="nk" label="Nhập kho" onClick={() => navigate('/inbound')} />
                   <QuickBtn icon="ri-receipt-line" color="xk" label="Xuất kho" onClick={() => navigate('/outbound')} />
                   <QuickBtn icon="ri-ship-line" color="xk" label="Xuất bến" onClick={() => navigate('/outbound')} />
+                  <QuickBtn icon="ri-file-chart-line" color="qm" label="Chứng từ" onClick={() => navigate('/accounting')} />
                 </div>
               </div>
 
@@ -428,6 +429,7 @@ export default function HomePage() {
                   <QuickBtn icon="ri-error-warning-line" color="error" label="Error Queue" onClick={() => navigate('/internal-qm/error-queue')} />
                   <QuickBtn icon="ri-arrow-up-down-line" color="xk" label="FEFO" onClick={() => navigate('/outbound/fefo-picking/OD-2026-0098')} />
                   <QuickBtn icon="ri-shield-check-line" color="qm" label="QM Hold" onClick={() => navigate('/internal-qm/qm-hold')} />
+                  <QuickBtn icon="ri-bar-chart-line" color="sx" label="Báo cáo" onClick={() => navigate('/reports')} />
                 </div>
               </div>
 

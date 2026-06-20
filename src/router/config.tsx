@@ -28,6 +28,8 @@ import CycleCountPage from "@/pages/internal-qm/CycleCount";
 import DefectCodesPage from "@/pages/internal-qm/DefectCodes";
 import ErrorQueueResolverPage from "@/pages/internal-qm/ErrorQueueResolver";
 import SettingsPage from "@/pages/settings/page";
+import ReportsPage from "@/pages/reports/page";
+import AccountingPage from "@/pages/accounting/page";
 import MobileLayout from "@/components/feature/MobileLayout";
 import NotFound from "@/pages/NotFound";
 
@@ -106,6 +108,14 @@ const routes: RouteObject[] = [
       {
         path: "settings",
         element: <SettingsPage />,
+      },
+      {
+        path: "reports",
+        element: <ReportsPage />,
+      },
+      {
+        path: "accounting",
+        element: <AccountingPage />,
       },
     ],
   },
