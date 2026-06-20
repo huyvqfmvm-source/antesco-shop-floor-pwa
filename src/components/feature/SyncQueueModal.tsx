@@ -12,7 +12,7 @@ export default function SyncQueueModal() {
   const pct = total > 0 ? Math.round((current / total) * 100) : 0;
 
   const queueItems = state.offlineQueue.filter((q) =>
-    q.status === 'Pending Sync' || q.status === 'Local Saved' || q.status === 'Syncing' || q.status === 'Sync Failed'
+    q.status === 'Pending Sync' || q.status === 'Local Saved' || q.status === 'Pending User Confirm' || q.status === 'Ready To Sync' || q.status === 'Syncing' || q.status === 'Sync Failed'
   );
 
   const getItemStatusVariant = (status: string): 'sync' | 'error' | 'success' | 'neutral' => {
@@ -78,12 +78,12 @@ export default function SyncQueueModal() {
                 )}
                 {item.status === 'Sync Failed' && <i className="ri-close-circle-line text-ant-error text-sm" />}
                 {item.status === 'Synced' && <i className="ri-checkbox-circle-line text-ant-sx text-sm" />}
-                {(item.status === 'Pending Sync' || item.status === 'Local Saved') && <i className="ri-time-line text-ant-text-secondary text-sm" />}
+                {(item.status === 'Pending Sync' || item.status === 'Local Saved' || item.status === 'Pending User Confirm' || item.status === 'Ready To Sync') && <i className="ri-time-line text-ant-text-secondary text-sm" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-ant-text truncate">{item.mockMovement}</p>
                 <p className="text-xxs text-ant-text-secondary truncate">
-                  {item.type === 'PUTAWAY' ? 'Putaway' : 'QM Hold'} · {item.huId || item.batchId}
+                  {item.type === 'PUTAWAY' ? 'Putaway' : item.type === 'QM_HOLD' ? 'QM Hold' : item.type === 'FG_RECEIVING' ? 'Nhập kho TP' : item.type === 'FEFO_PICKING' ? 'FEFO Picking' : item.type === 'CYCLE_COUNT' ? 'Kiểm kê' : item.type === 'TRANSFER_ORDER' ? 'Điều chuyển' : 'Nhận ĐC'} · {item.huId || item.batchId || item.binId || item.transferId}
                 </p>
               </div>
               <StatusBadge

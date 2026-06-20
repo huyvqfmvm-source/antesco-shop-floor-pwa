@@ -108,7 +108,7 @@ export default function SettingsPage() {
   const [adminDepartmentDraft, setAdminDepartmentDraft] = useState(state.currentUserData?.department || '');
   const showLegacyUserCard = false;
 
-  const pendingQueueCount = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved').length;
+  const pendingQueueCount = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved' || q.status === 'Pending User Confirm' || q.status === 'Ready To Sync').length;
 
   const handleNetworkChange = (status: NetworkStatus) => {
     dispatch({ type: 'SET_NETWORK', payload: status });

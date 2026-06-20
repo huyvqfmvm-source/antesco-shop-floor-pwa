@@ -45,6 +45,16 @@ export default function OutboundPage() {
         </div>
         <h2 className="text-xl font-bold">Phiếu xuất kho</h2>
         <p className="text-xs text-white/60 mt-1.5">{state.outboundDeliveries.length} phiếu · {state.plant?.name || ''}</p>
+        {/* Flow indicator */}
+        <div className="flex items-center gap-1 mt-3 pt-3 border-t border-white/10">
+          <span className="text-xxs text-white/50">OD</span>
+          <span className="w-1 h-1 rounded-full bg-white/40" />
+          <span className="text-xxs text-white/50">FEFO Picking</span>
+          <span className="w-1 h-1 rounded-full bg-white/40" />
+          <span className="text-xxs text-white/50">Container</span>
+          <span className="w-1 h-1 rounded-full bg-white/40" />
+          <span className="text-xxs text-white/50">Xuất bến</span>
+        </div>
       </div>
 
       {/* Search */}

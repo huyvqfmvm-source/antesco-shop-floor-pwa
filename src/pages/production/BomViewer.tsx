@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/store/AppContext';
 import { MOCK_ALL_MATERIAL_NORMS } from '@/mocks/material-norms';
+import PermissionBanner from '@/components/base/PermissionBanner';
 import type { MaterialNorm, MaterialNormItem } from '@/mocks/material-norms';
 
 export default function BomViewerPage() {
@@ -29,12 +30,23 @@ export default function BomViewerPage() {
           <i className="ri-arrow-left-line text-lg" />
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-sm font-bold truncate">Định mức NVL — QĐ01B 2026</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-sm font-bold truncate">Định mức NVL — QĐ01B 2026</h1>
+            <span className="hidden sm:inline-flex items-center gap-1 text-xxs text-white/70 bg-white/10 px-2 py-0.5 rounded-full font-medium">
+              <i className="ri-file-text-line text-[10px]" />QĐ01B-DM-NVL-2026
+            </span>
+          </div>
           <p className="text-xs text-white/70">BOM/Định mức nguyên vật liệu</p>
         </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 space-y-4">
+        <PermissionBanner
+          module="Sản xuất — BOM/Định mức NVL"
+          moduleIcon="ri-file-list-3-line"
+          moduleColor="sx"
+          requiredPermissions={['PRODUCTION_MATERIAL', 'PRODUCTION_VIEW']}
+        />
         {/* Product selector */}
         <div className="bg-ant-card rounded-xl border border-gray-100 p-4">
           <label className="text-xs font-bold text-ant-text-secondary uppercase block mb-2">Sản phẩm</label>

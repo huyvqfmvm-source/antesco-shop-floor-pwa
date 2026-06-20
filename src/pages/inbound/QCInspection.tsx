@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp, hasPermission } from '@/store/AppContext';
-import { MOCK_RM_RECEIPTS } from '@/mocks/extended';
 import { MOCK_LOSS_REASONS } from '@/mocks/loss-reasons';
 import { MOCK_DEFECT_CODES } from '@/mocks/data';
 import PermissionBanner from '@/components/base/PermissionBanner';
@@ -9,11 +8,11 @@ import MultiRoleSignature from '@/components/base/MultiRoleSignature';
 import type { SignedInfo } from '@/components/base/MultiRoleSignature';
 
 export default function QCInspectionPage() {
-  const { state, addToast, addActivityLog } = useApp();
+  const { state, addToast, addActivityLog, dispatch } = useApp();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(0);
-  const [receiptId, setReceiptId] = useState('RM-RCPT-001');
+  const [receiptId, setReceiptId] = useState('');
   const [gradeIPct, setGradeIPct] = useState<number | ''>(85);
   const [gradeIIPct, setGradeIIPct] = useState<number | ''>(10);
   const [rejectPct, setRejectPct] = useState<number | ''>(5);
@@ -23,7 +22,9 @@ export default function QCInspectionPage() {
   const [qcSignInfo, setQcSignInfo] = useState<SignedInfo | null>(null);
   const [whSignInfo, setWhSignInfo] = useState<SignedInfo | null>(null);
 
-  const receipt = MOCK_RM_RECEIPTS.find((r) => r.id === receiptId);
+  // Đọc từ state thay vì mock tĩnh — liên thông với ReceiveRM
+  const receipts = state.rawMaterialReceipts.filter((r) => r.plant === (state.plant?.code || 'MA'));
+  const receipt = receipts.find((r) => r.id === receiptId);
   const totalPct = (gradeIPct || 0) + (gradeIIPct || 0) + (rejectPct || 0);
   const hasDefects = qcResult === 'Không đạt' || qcResult === 'QM Hold';
   const canConfirm = qcSignInfo !== null && whSignInfo !== null && (!hasDefects || (hasDefects && selectedDefect && note.length > 0));
@@ -42,9 +43,18 @@ export default function QCInspectionPage() {
 
   const handleSubmit = () => {
     if (!canConfirm) return;
+    if (receipt) {
+      dispatch({ type: 'UPDATE_RAW_MATERIAL_RECEIPT', payload: { id: receipt.id, updates: { qcStatus: qcResult } } });
+    }
     addActivityLog(state.currentUser, state.role?.name || '', 'QC đầu vào', `${receiptId} · ${qcResult} · Loại I: ${gradeIPct}% Loại II: ${gradeIIPct}% Loại bỏ: ${rejectPct}%`);
     addToast('success', `Đã hoàn tất QC đầu vào. Kết quả: ${qcResult}`);
     navigate('/inbound');
+  };
+
+  const selectFirstReceipt = () => {
+    if (receipts.length > 0) {
+      setReceiptId(receipts[0].id);
+    }
   };
 
   return (
@@ -82,7 +92,7 @@ export default function QCInspectionPage() {
             <div className="bg-ant-card rounded-xl border border-gray-100 p-4">
               <p className="text-sm font-bold text-ant-text mb-3">Chọn phiếu nhập cần kiểm QC</p>
               <div className="space-y-2">
-                {MOCK_RM_RECEIPTS.map((r) => (
+                {receipts.map((r) => (
                   <button key={r.id} onClick={() => { setReceiptId(r.id); setStep(1); }}
                     className={`w-full text-left p-3 rounded-xl border transition-all ${receiptId === r.id ? 'border-ant-qm/30 bg-ant-qm/5' : 'border-gray-100 hover:border-gray-200'}`}>
                     <div className="flex justify-between">

@@ -17,7 +17,7 @@ export default function AdminDashboardPage() {
   const blockedBatches = state.batches.filter((b) => b.status === 'Blocked Stock').length;
   const qhActive = state.qualityHolds.filter((q) => q.status === 'Đang giữ' || q.status === 'Đã khóa').length;
   const errorPending = state.errorQueue.filter((e) => e.status === 'Pending' || e.status === 'Need Review').length;
-  const offlinePending = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved').length;
+  const offlinePending = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved' || q.status === 'Pending User Confirm' || q.status === 'Ready To Sync').length;
   const completedODs = state.outboundDeliveries.filter((od) => od.status === 'Đã xuất bến').length;
   const totalRMs = state.rawMaterialReceipts.length;
 

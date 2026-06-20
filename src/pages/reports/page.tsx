@@ -58,7 +58,7 @@ export default function ReportsPage() {
   const qhByStatus: Record<string, number> = {};
   filteredQHs.forEach((qh) => { qhByStatus[qh.status] = (qhByStatus[qh.status] || 0) + 1; });
 
-  const queuePending = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved').length;
+  const queuePending = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved' || q.status === 'Pending User Confirm' || q.status === 'Ready To Sync').length;
   const errorPending = state.errorQueue.filter((e) => e.status === 'Pending' || e.status === 'Need Review').length;
 
   const handleExportCSV = () => {

@@ -84,7 +84,7 @@ export interface ToastItem {
 }
 export interface OfflineQueueItem {
   queueId: string;
-  type: 'PUTAWAY' | 'QM_HOLD' | 'FG_RECEIVING' | 'FEFO_PICKING' | 'CYCLE_COUNT' | 'TRANSFER_ORDER' | 'RECEIVE_TRANSFER';
+  type: 'PUTAWAY' | 'QM_HOLD' | 'FG_RECEIVING' | 'FEFO_PICKING' | 'CYCLE_COUNT' | 'TRANSFER_ORDER' | 'RECEIVE_TRANSFER' | 'BTP_REPORT' | 'FG_CARTON_REPORT' | 'CONTAINER_LOADING';
   user: string;
   role: string;
   plant: string;
@@ -683,7 +683,19 @@ const initialState: AppState = {
   fgCartonReports: MOCK_FG_CARTON_REPORTS,
   fgWarehouseRequests: MOCK_FG_WAREHOUSE_REQUESTS,
   temporaryStocks: MOCK_TEMPORARY_STOCKS,
-  offlineQueue: [],
+  offlineQueue: [
+    { queueId: 'off-demo-001', type: 'PUTAWAY' as const, user: 'Trần Thị Bình', role: 'Thủ kho', plant: 'MA', shift: 'Ca 1', huId: 'HU-2026-MA-BTP-XOAI-0002', binId: 'KL-01-A1-T2', createdAt: '2026-06-20 08:30', status: 'Pending User Confirm' as const, retryCount: 0, mockMovement: 'MIGO-311', maxHoldHours: 24 },
+    { queueId: 'off-demo-002', type: 'QM_HOLD' as const, user: 'Lê Văn Cường', role: 'KCS/QM', plant: 'MA', shift: 'Ca 1', batchId: '002216226', defectCode: 'DF-006', reason: 'Kết tinh tuyết bất thường trên bề mặt pallet', photos: ['photo-001', 'photo-002'], createdAt: '2026-06-20 09:15', status: 'Pending User Confirm' as const, retryCount: 0, mockMovement: 'MIGO-344', maxHoldHours: 24 },
+    { queueId: 'off-demo-003', type: 'FG_RECEIVING' as const, user: 'Trần Thị Bình', role: 'Thủ kho', plant: 'MA', shift: 'Ca 1', huId: 'HU-2026-MA-FG-XN-0007', batchId: '002216225', quantity: 3000, unit: 'KG', createdAt: '2026-06-20 10:00', status: 'Local Saved' as const, retryCount: 0, mockMovement: 'MIGO-101', maxHoldHours: 24 },
+    { queueId: 'off-demo-004', type: 'CYCLE_COUNT' as const, user: 'Trần Thị Bình', role: 'Thủ kho', plant: 'BK', shift: 'Ca 2', binId: 'KL-05-C2-T4', quantity: 2400, unit: 'KG', additionalData: { expectedPallets: 4, actualPallets: 4, expectedQty: 2400 }, reason: 'Kiểm kê định kỳ BK', createdAt: '2026-06-20 11:00', status: 'Ready To Sync' as const, retryCount: 0, mockMovement: 'LI11N', maxHoldHours: 24 },
+    { queueId: 'off-demo-005', type: 'FEFO_PICKING' as const, user: 'Trần Văn Giang', role: 'Thủ kho', plant: 'BK', shift: 'Ca 2', huId: 'HU-2026-BK-FG-MIT-0004', odId: 'OD-2026-0105', batchId: 'FG-2026-BK-0078-166-003', createdAt: '2026-06-20 13:00', status: 'Ready To Sync' as const, retryCount: 0, mockMovement: 'MIGO-311 E', maxHoldHours: 24 },
+    { queueId: 'off-demo-006', type: 'TRANSFER_ORDER' as const, user: 'Trần Thị Bình', role: 'Thủ kho', plant: 'MA', shift: 'Ca 1', huId: 'HU-IQF-XN-04', transferId: 'ST-2026-0095', createdAt: '2026-06-20 14:30', status: 'Local Saved' as const, retryCount: 0, mockMovement: 'MIGO-311 T', maxHoldHours: 24 },
+    { queueId: 'off-demo-007', type: 'RECEIVE_TRANSFER' as const, user: 'Trần Văn Giang', role: 'Thủ kho', plant: 'BK', shift: 'Ca 2', huId: 'HU-IQF-MIT-02', transferId: 'ST-2026-0091', binId: 'KL-06-A1-T1', createdAt: '2026-06-20 15:00', status: 'Pending User Confirm' as const, retryCount: 0, mockMovement: 'MIGO-311 R', maxHoldHours: 24 },
+    { queueId: 'off-demo-008', type: 'PUTAWAY' as const, user: 'Trần Thị Bình', role: 'Thủ kho', plant: 'MA', shift: 'Ca 1', huId: 'HU-2026-MA-FG-XN-0009', binId: 'KL-04-A1-T1', createdAt: '2026-06-20 16:00', status: 'Sync Failed' as const, retryCount: 2, mockMovement: 'MIGO-311', maxHoldHours: 24 },
+    { queueId: 'off-demo-009', type: 'BTP_REPORT' as const, user: 'Nguyễn Văn An', role: 'Công nhân sản xuất', plant: 'MA', shift: 'Ca 1', batchId: '002216225', quantity: 6500, unit: 'KG', additionalData: { gradeI: 6500, gradeII: 600, reject: 400, inputQty: 7500, palletIds: 'BTP-001,BTP-002,BTP-003' }, createdAt: '2026-06-20 17:00', status: 'Local Saved' as const, retryCount: 0, mockMovement: 'CO11N', maxHoldHours: 24 },
+    { queueId: 'off-demo-010', type: 'FG_CARTON_REPORT' as const, user: 'Nguyễn Văn An', role: 'Công nhân sản xuất', plant: 'MA', shift: 'Ca 1', batchId: '002216225', quantity: 4500, unit: 'Hộp', additionalData: { cartonQty: 450, cartonPerPallet: 50, lossQty: 45, lossReason: 'LR-009' }, createdAt: '2026-06-20 17:30', status: 'Pending User Confirm' as const, retryCount: 0, mockMovement: 'CO11N', maxHoldHours: 24 },
+    { queueId: 'off-demo-011', type: 'CONTAINER_LOADING' as const, user: 'Trần Thị Bình', role: 'Thủ kho', plant: 'MA', shift: 'Ca 1', odId: 'OD-2026-0103', additionalData: { container: 'MSCU7890123', seal: 'SEAL-2026-0103', palletCount: 10, checklistPassed: true }, createdAt: '2026-06-20 18:00', status: 'Pending User Confirm' as const, retryCount: 0, mockMovement: 'VL10', maxHoldHours: 24 },
+  ],
   errorQueue: MOCK_SAP_ERRORS,
   activityLogs: MOCK_ACTIVITY_LOGS,
   toasts: [],
@@ -1334,6 +1346,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
             if (item.type === 'RECEIVE_TRANSFER' && item.huId && item.transferId) {
               dispatch({ type: 'UPDATE_HANDLING_UNIT', payload: { id: item.huId, updates: { status: 'Đã nhận ĐC', location: item.binId || '' } } });
               dispatch({ type: 'UPDATE_TRANSFER_ORDER', payload: { id: item.transferId, updates: { status: 'Đã nhận' } } });
+            }
+            if (item.type === 'BTP_REPORT' && item.batchId) {
+              dispatch({ type: 'ADD_ACTIVITY', payload: { id: genActivityId(), timestamp: new Date().toISOString().slice(0, 16).replace('T', ' '), user: item.user, role: item.role, action: 'Đồng bộ BTP Report', detail: `Batch ${item.batchId} — ${(item.quantity || 0).toLocaleString()} ${item.unit || 'KG'}`, plant: item.plant } });
+            }
+            if (item.type === 'FG_CARTON_REPORT' && item.batchId) {
+              dispatch({ type: 'ADD_ACTIVITY', payload: { id: genActivityId(), timestamp: new Date().toISOString().slice(0, 16).replace('T', ' '), user: item.user, role: item.role, action: 'Đồng bộ FG Carton Report', detail: `Batch ${item.batchId} — ${(item.additionalData?.cartonQty as number) || 0} thùng`, plant: item.plant } });
+            }
+            if (item.type === 'CONTAINER_LOADING' && item.odId) {
+              dispatch({ type: 'UPDATE_OUTBOUND_DELIVERY', payload: { id: item.odId, updates: { status: 'Đã xuất bến' } } });
+              dispatch({ type: 'ADD_ACTIVITY', payload: { id: genActivityId(), timestamp: new Date().toISOString().slice(0, 16).replace('T', ' '), user: item.user, role: item.role, action: 'Đồng bộ Container Loading', detail: `OD ${item.odId} — Container ${(item.additionalData?.container as string) || '?'} — Đã xuất bến`, plant: item.plant } });
             }
             setTimeout(() => {
               dispatch({ type: 'REMOVE_OFFLINE_QUEUE', payload: item.queueId });

@@ -13,6 +13,17 @@ export default function InboundPage() {
   const pendingPutaway = plantHUs.filter((hu) => hu.status === 'Chờ putaway');
   const completedHUs = plantHUs.filter((hu) => hu.status === 'Đã xếp kệ');
   const plantRMs = state.rawMaterialReceipts.filter((r) => r.plant === plantCode);
+  const plantPOs = state.purchaseOrders.filter((po) => po.plant === plantCode);
+  const pendingPOs = plantPOs.filter((po) => po.status === 'Chưa nhập' || po.status === 'Đang nhập' || po.status === 'Đã nhập một phần');
+  const completedRMs = plantRMs.filter((r) => r.status === 'Đã nhập');
+
+  // Flow connectivity: show how many have moved through each stage
+  const flowStats = {
+    poWaiting: pendingPOs.length,
+    rmReceived: plantRMs.length,
+    rmQCd: plantRMs.filter((r) => r.qcStatus === 'Đạt').length,
+    receiptCreated: plantRMs.filter((r) => r.status === 'Đã nhập').length,
+  };
 
   const statusBadgeVariant = (status: string): 'nk' | 'warning' | 'success' | 'offline' | 'qm' => {
     switch (status) {
@@ -36,7 +47,19 @@ export default function InboundPage() {
           <span className="text-xs font-bold opacity-80 uppercase tracking-wider">NHẬP KHO</span>
         </div>
         <h2 className="text-xl font-bold">Quy trình nhập kho</h2>
-        <p className="text-xs text-white/60 mt-1.5">{state.plant?.name} · {plantHUs.length} pallet</p>
+        <p className="text-xs text-white/60 mt-1.5">{state.plant?.name} · {plantHUs.length} pallet · {flowStats.poWaiting} PO chờ nhập</p>
+        {/* Flow connectivity mini indicator */}
+        <div className="flex items-center gap-1 mt-3 pt-3 border-t border-white/10">
+          <span className="text-xxs text-white/50">PO</span>
+          <span className="w-1 h-1 rounded-full bg-white/40" />
+          <span className="text-xxs text-white/50">Tiếp nhận</span>
+          <span className="w-1 h-1 rounded-full bg-white/40" />
+          <span className="text-xxs text-white/50">QC</span>
+          <span className="w-1 h-1 rounded-full bg-white/40" />
+          <span className="text-xxs text-white/50">PNK</span>
+          <span className="w-1 h-1 rounded-full bg-white/40" />
+          <span className="text-xxs text-white/50">Putaway</span>
+        </div>
       </div>
 
       {/* Process Stepper */}

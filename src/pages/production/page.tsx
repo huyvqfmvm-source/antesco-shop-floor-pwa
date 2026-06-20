@@ -72,8 +72,18 @@ export default function ProductionPage() {
         <div className="flex-1 min-w-0">
           <h1 className="text-sm font-bold text-ant-text truncate">Sản xuất</h1>
           <p className="text-xxs text-ant-text-secondary truncate">
-            {state.plant?.name} · {filteredPOs.length} lệnh
+            {state.plant?.name} · {filteredPOs.length} lệnh · {state.productionOrders.filter(p => p.status === 'STRT').length} đang chạy
           </p>
+        </div>
+        {/* Flow indicator */}
+        <div className="hidden sm:flex items-center gap-0.5 text-xxs text-ant-text-secondary">
+          <span className={state.productionOrders.filter(p => p.status === 'CRTD').length > 0 ? 'text-ant-qm font-bold' : ''}>CRTD</span>
+          <i className="ri-arrow-right-s-line text-[10px]" />
+          <span className={state.productionOrders.filter(p => p.status === 'REL').length > 0 ? 'text-ant-nk font-bold' : ''}>REL</span>
+          <i className="ri-arrow-right-s-line text-[10px]" />
+          <span className={state.productionOrders.filter(p => p.status === 'STRT').length > 0 ? 'text-ant-sx font-bold' : ''}>STRT</span>
+          <i className="ri-arrow-right-s-line text-[10px]" />
+          <span>CNF/TECO</span>
         </div>
       </header>
 

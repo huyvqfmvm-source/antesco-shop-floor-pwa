@@ -38,7 +38,7 @@ export default function HomePage() {
   const palletChoPutaway = state.handlingUnits.filter((h) => h.plant === plantCode && h.status === 'Chờ putaway');
   const odChoXuat = state.outboundDeliveries.filter((o) => o.plant === plantCode && (o.status === 'Chờ picking' || o.status === 'Đang picking'));
   const loBiKhoaQC = state.batches.filter((b) => b.plant === plantCode && b.status === 'Blocked Stock');
-  const queuePending = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved' || q.status === 'Pending User Confirm').length;
+  const queuePending = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved' || q.status === 'Pending User Confirm' || q.status === 'Ready To Sync').length;
   const errorQueueCount = state.errorQueue.filter((e) => e.status === 'Pending' || e.status === 'Need Review').length;
 
   const handleSyncQueue = () => {

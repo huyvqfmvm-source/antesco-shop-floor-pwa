@@ -1009,3 +1009,132 @@ Thêm 6 loại lỗi mới:
 23. Reset Mock Data đưa app về trạng thái ban đầu
 24. Không có màn hình trắng, route chết, button không phản hồi
 25. Build passed — không có lỗi compile
+
+## PHẦN 22 — Prompt 2: Kết Nối Flow Nghiệp Vụ Đầu-Cuối & Mock Data Mở Rộng
+
+Trạng thái: ✅ HOÀN THÀNH — 2026-06-20
+
+### Mục tiêu
+Kết nối các màn hình nghiệp vụ thành flow đầu-cuối có thể test được bằng dữ liệu mock. Dữ liệu chạy xuyên suốt từ PO → Tiếp nhận NL → QC → Phiếu nhập kho → Putaway → FEFO → Container → Error Queue.
+
+### 1. Mock Data Mở Rộng
+
+**Purchase Orders**: Từ 5 PO → 9 PO với đa dạng trạng thái và loại vật tư:
+- 3 PO xoài cát (Chưa nhập, Đã nhập một phần, Đã nhập hết)
+- 2 PO thanh long (Đã nhập một phần, Chưa nhập)
+- 1 PO mít tươi (Chưa nhập)
+- 1 PO bao bì (Đã nhập hết)
+- 1 PO hóa chất (Đã quyết toán)
+- 1 PO xoài cát BK (Chưa nhập)
+
+### 2. Flow Connectivity — Inbound
+
+| Màn hình | Thay đổi |
+|----------|----------|
+| **POWaitingList** | Thêm nút Export CSV (BOM UTF-8), hiển thị đầy đủ 9 PO với filter NCC/trạng thái/vật tư |
+| **QCInspection** | Chuyển từ MOCK_RM_RECEIPTS tĩnh → đọc `state.rawMaterialReceipts` (liên thông với ReceiveRM). Khi hoàn tất QC, cập nhật `qcStatus` của RM Receipt trong state |
+| **ReceiveRM** | Đã có sẵn flow quét PO → OCR → QC input → dispatch ADD_RAW_MATERIAL_RECEIPT vào state |
+| **ReceiptNote** | Đã có sẵn flow nhập thông tin → sinh batch tạm → ký → Export PDF |
+| **Inbound Landing** | Thêm flow connectivity indicator (PO → Tiếp nhận → QC → PNK → Putaway), hiển thị pending PO count |
+
+### 3. Flow Connectivity — Production
+
+| Màn hình | Thay đổi |
+|----------|----------|
+| **Production Landing** | Thêm flow indicator trên header: CRTD → REL → STRT → CNF/TECO với highlight màu theo trạng thái active. Hiển thị số lệnh đang chạy |
+| **ProductionPlan** | Đã có sẵn 8 kế hoạch mock, link đến PO và BOM |
+| **MaterialIssue** | Đã có sẵn flow 4-step: chọn PO → xem BOM → duyệt → ký giao/nhận |
+| **BTPHandover** | Đã có sẵn flow 3-step: chọn pallet → nhập két/KL → ký giao/nhận |
+
+### 4. Flow Connectivity — Outbound
+
+| Màn hình | Thay đổi |
+|----------|----------|
+| **Outbound Landing** | Thêm flow indicator: OD → FEFO Picking → Container → Xuất bến |
+| **FEFOPicking** | Đã có flow đầy đủ: chọn OD → quét bin → quét pallet → xác nhận, với FEFO recommendation, Blocked Stock check, Override modal |
+| **ContainerLoading** | Đã có flow 5-step: quét OD → quét pallet → OCR container/seal → checklist → xuất bến |
+
+### 5. Flow Connectivity — Internal QM
+
+| Màn hình | Thay đổi |
+|----------|----------|
+| **Internal QM Landing** | Đã có summary cards (QM Hold, Blocked Stock, Đang vận chuyển, Kiểm kê) |
+| **QMHold** | Đã có sẵn flow 4-step: quét → ghi lỗi → chụp ảnh → khóa lô |
+| **TransferOrder** | Đã có sẵn flow 5-step: quét ST → quét pallet → OCR xe → ký → chốt |
+| **CycleCount** | Đã có sẵn flow 4-step: quét bin → quét pallet → nhập SL → xác nhận |
+
+### 6. File Changes Summary
+
+| File | Status |
+|------|--------|
+| `src/mocks/business-entities.ts` | MODIFIED: MOCK_PURCHASE_ORDERS từ 5 → 9 PO |
+| `src/pages/inbound/POWaitingList.tsx` | MODIFIED: Export CSV button + useCallback |
+| `src/pages/inbound/QCInspection.tsx` | MODIFIED: Đọc state.rawMaterialReceipts thay vì MOCK_RM_RECEIPTS, dispatch UPDATE_RAW_MATERIAL_RECEIPT khi hoàn tất QC |
+| `src/pages/inbound/page.tsx` | MODIFIED: Flow connectivity indicator, pending PO count |
+| `src/pages/outbound/page.tsx` | MODIFIED: Flow indicator OD → FEFO → Container → Xuất bến |
+| `src/pages/production/page.tsx` | MODIFIED: Flow indicator CRTD→REL→STRT, số lệnh đang chạy |
+
+### 7. End-to-End Test Flow
+
+Người test có thể chạy flow đầy đủ:
+
+```
+1. Vào Nhập kho → PO chờ nhập → thấy 9 PO → Export CSV
+2. Chọn PO → Tiếp nhận ngay → ReceiveRM: quét PO → OCR xe → nhập QC → xác nhận
+3. Sau ReceiveRM, vào QC đầu vào → thấy phiếu vừa tạo trong danh sách → kiểm QC → ký
+4. Vào Phiếu nhập kho → tạo PNK → sinh batch tạm → ký → Export PDF
+5. Vào Nhập kho TP → quét pallet → OCR → đồng kiểm → ký → xác nhận
+6. Vào Putaway → quét pallet chờ → quét ô kệ → xác nhận
+7. Vào Xuất kho → chọn OD → FEFO Picking → quét bin → quét pallet → xác nhận
+8. Vào Container Loading → quét OD → quét pallet → OCR → checklist → xuất bến
+9. Vào Nội bộ & QM → QM Hold → quét batch → nhập lỗi → chụp ảnh → khóa
+10. Vào Error Queue → xem lỗi → xử lý
+```
+
+### Điểm nổi bật
+
+- **9 PO đa dạng**: 3 NCC × 4 loại vật tư (xoài, thanh long, mít, bao bì, hóa chất) × 4 trạng thái
+- **QCInspection liên thông**: Đọc dữ liệu từ ReceiveRM qua state, cập nhật qcStatus khi hoàn tất
+- **Flow indicators**: Mỗi landing page đều hiển thị flow connectivity để người dùng biết đang ở đâu trong quy trình
+- **Export CSV**: POWaitingList có nút export với BOM UTF-8 cho tiếng Việt
+- **Toàn bộ flow test được**: Từ PO → Tiếp nhận → QC → PNK → Nhập kho TP → Putaway → FEFO → Container → Xuất bến → Error Queue
+
+## PHẦN 23 — Final UAT: Help System, Offline Queue 10 Types, UX Enhancements (2026-06-20)
+
+Trạng thái: ✅ HOÀN THÀNH — 2026-06-20
+
+### Mục tiêu
+Hoàn thiện PWA ở mức 90-95% UAT-ready: In-app Help System, Offline Queue 10 loại giao dịch, UX hoàn chỉnh.
+
+### 1. In-App Help System (MỚI)
+
+| File | Chức năng |
+|------|-----------|
+| `src/components/base/HelpDrawer.tsx` | Help Drawer slide-in: hướng dẫn chi tiết 8 module (production, inbound, outbound, internal-qm, offline-queue, reports, production/wip) |
+| `src/components/feature/MobileLayout.tsx` | Nút "?" trên header, mở HelpDrawer theo URL hiện tại |
+
+### 2. Offline Queue Mở Rộng — 10 Loại
+
+Thêm 3 loại mới: BTP_REPORT (CO11N), FG_CARTON_REPORT (CO11N), CONTAINER_LOADING (VL10).
+Tổng cộng 10 loại: PUTAWAY, QM_HOLD, FG_RECEIVING, FEFO_PICKING, CYCLE_COUNT, TRANSFER_ORDER, RECEIVE_TRANSFER, BTP_REPORT, FG_CARTON_REPORT, CONTAINER_LOADING.
+
+### 3. File Changes
+
+| File | Status |
+|------|--------|
+| `src/components/base/HelpDrawer.tsx` | NEW (260 dòng) |
+| `src/components/feature/MobileLayout.tsx` | REWRITTEN: nút Help + HelpDrawer |
+| `src/store/AppContext.tsx` | MODIFIED: 10 types + 3 demo items + sync engine |
+| `src/pages/offline-queue/page.tsx` | MODIFIED: TYPE_LABELS, FILTER_TYPES, getItemSummary |
+| `src/pages/sync-confirm/page.tsx` | MODIFIED: TYPE_LABELS, FORM_SOURCE_MAP, getItemSummary |
+
+### 4. UAT Readiness — 90-95%
+
+✅ Mock data đầy đủ · ✅ Flow đầu-cuối · ✅ RBAC 100% · ✅ Offline đúng rule · ✅ Error Queue 16 lỗi · ✅ Export PDF 10 biểu mẫu · ✅ Traceability 15 bước · ✅ In-app Help 8 module · ✅ Cold Storage/High Contrast/Dark Mode · ✅ Scan Feedback · ✅ Không route chết/màn hình trắng · ✅ Không button không phản hồi
+
+### 5. Known Limitations
+- SAP là mock API, chưa tích hợp SAP thật
+- PDF export là mock (text blob)
+- Chưa có Supabase/backend thật
+- Chưa có xác thực OAuth/JWT
+- Chưa có push notification thật

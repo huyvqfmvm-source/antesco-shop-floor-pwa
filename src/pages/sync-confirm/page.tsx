@@ -11,6 +11,9 @@ const TYPE_LABELS: Record<string, { label: string; icon: string; color: string }
   CYCLE_COUNT: { label: 'Kiểm kê', icon: 'ri-clipboard-line', color: 'ant-qm' },
   TRANSFER_ORDER: { label: 'Điều chuyển', icon: 'ri-arrow-left-right-line', color: 'ant-qm' },
   RECEIVE_TRANSFER: { label: 'Nhận ĐC', icon: 'ri-arrow-go-back-line', color: 'ant-qm' },
+  BTP_REPORT: { label: 'Báo cáo BTP', icon: 'ri-file-chart-line', color: 'ant-sx' },
+  FG_CARTON_REPORT: { label: 'Đóng thùng TP', icon: 'ri-inbox-line', color: 'ant-sx' },
+  CONTAINER_LOADING: { label: 'Đóng container', icon: 'ri-ship-line', color: 'ant-xk' },
 };
 
 const FORM_SOURCE_MAP: Record<string, { code: string; name: string }> = {
@@ -21,6 +24,9 @@ const FORM_SOURCE_MAP: Record<string, { code: string; name: string }> = {
   CYCLE_COUNT: { code: 'SAP-LI11N', name: 'Cycle Count Entry' },
   TRANSFER_ORDER: { code: 'SAP-MIGO-311', name: 'Transfer Order' },
   RECEIVE_TRANSFER: { code: 'SAP-MIGO-311', name: 'Receive Transfer' },
+  BTP_REPORT: { code: 'BC-BTP-01', name: 'Báo cáo BTP' },
+  FG_CARTON_REPORT: { code: 'BC-DTTP-01', name: 'Báo cáo đóng thùng TP' },
+  CONTAINER_LOADING: { code: 'SAP-VL10', name: 'Container Loading & Dispatch' },
 };
 
 export default function SyncConfirmationPage() {
@@ -144,6 +150,9 @@ export default function SyncConfirmationPage() {
       case 'CYCLE_COUNT': return `Ô kệ ${item.binId || '?'} — ${(item.quantity || 0).toLocaleString()} ${item.unit || 'KG'}`;
       case 'TRANSFER_ORDER': return `ĐC ${item.transferId || '?'} — HU ${item.huId || '?'}`;
       case 'RECEIVE_TRANSFER': return `Nhận ĐC ${item.transferId || '?'} — HU ${item.huId || '?'}`;
+      case 'BTP_REPORT': return `BTP ${item.batchId || '?'} — ${(item.quantity || 0).toLocaleString()} ${item.unit || 'KG'}`;
+      case 'FG_CARTON_REPORT': return `Đóng thùng ${item.batchId || '?'} — ${(item.additionalData?.cartonQty as number) || 0} thùng`;
+      case 'CONTAINER_LOADING': return `OD ${item.odId || '?'} — Container ${(item.additionalData?.container as string) || '?'}`;
       default: return item.mockMovement;
     }
   };

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/store/AppContext';
 import StatusBadge from '@/components/base/StatusBadge';
@@ -35,6 +35,21 @@ export default function POWaitingListPage() {
 
   const pendingCount = state.purchaseOrders.filter((po) => po.status === 'Chưa nhập' || po.status === 'Đã nhập một phần').length;
 
+  const handleExportCSV = useCallback(() => {
+    const headers = 'PO No,Nhà cung cấp,Vật tư/nguyên liệu,Mã vật tư,Số lượng đặt,ĐVT,Ngày dự kiến,Nhà máy,Trạng thái\n';
+    const rows = filteredPOs.map((po) =>
+      `"${po.poNo}","${po.supplierName}","${po.materialName}","${po.materialCode}",${po.plannedQty},"${po.uom}","${po.expectedDate}","${po.plant}","${po.status}"`
+    ).join('\n');
+    const csvContent = headers + rows;
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `PO-cho-nhap-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [filteredPOs]);
+
   return (
     <div className="min-h-screen bg-ant-bg flex flex-col">
       <header className="sticky top-0 z-30 bg-ant-nk text-white px-4 py-3 flex items-center gap-3 shrink-0">
@@ -45,6 +60,9 @@ export default function POWaitingListPage() {
           <h1 className="text-sm font-bold truncate">PO chờ nhập</h1>
           <p className="text-xs text-white/70">{state.plant?.name} · {pendingCount} PO chờ nhập</p>
         </div>
+        <button onClick={handleExportCSV} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors" title="Export CSV">
+          <i className="ri-file-download-line text-lg" />
+        </button>
         <span className="bg-white/20 text-white text-xxs font-bold px-2 py-1 rounded-full">{state.purchaseOrders.length} PO</span>
       </header>
 

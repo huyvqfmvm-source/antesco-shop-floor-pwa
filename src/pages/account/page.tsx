@@ -51,7 +51,7 @@ export default function AccountPage() {
   };
 
   const handleLogout = () => {
-    const pendingQueueCount = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved').length;
+    const pendingQueueCount = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved' || q.status === 'Pending User Confirm' || q.status === 'Ready To Sync').length;
     if (pendingQueueCount > 0) {
       dispatch({ type: 'SET_SHOW_LOGOUT_CONFIRM', payload: true });
     } else {
