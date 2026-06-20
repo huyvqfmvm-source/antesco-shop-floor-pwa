@@ -1,12 +1,26 @@
 import { Outlet, Navigate } from 'react-router-dom';
-import { useApp } from '@/store/AppContext';
+import { useApp, hasPermission, type PermissionAction } from '@/store/AppContext';
 import BottomNav from './BottomNav';
 import FloatingScanButton from './FloatingScanButton';
 import ToastContainer from './ToastContainer';
 import SyncQueueModal from './SyncQueueModal';
 import ConfirmModal from '@/components/base/ConfirmModal';
+import PermissionDenied from '@/components/base/PermissionDenied';
 import { Link, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+
+// Map routes to required permissions for route guard
+const ROUTE_PERMISSION_MAP: Record<string, PermissionAction> = {
+  '/production': 'PRODUCTION_VIEW',
+  '/inbound': 'INBOUND_VIEW',
+  '/outbound': 'OUTBOUND_VIEW',
+  '/internal-qm': 'QM_VIEW',
+  '/reports': 'PRODUCTION_VIEW',
+  '/accounting': 'VIEW_DOCUMENTS',
+  '/settings': 'PRODUCTION_VIEW',
+  '/account': 'PRODUCTION_VIEW',
+  '/admin': 'ADMIN_ALL',
+};
 
 export default function MobileLayout() {
   const { state, dispatch, logout } = useApp();
@@ -15,13 +29,23 @@ export default function MobileLayout() {
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
 
   useEffect(() => {
-    if (state.isLoggedIn && state.networkStatus === 'online' && state.offlineQueue.filter((q) => q.status === 'Pending').length > 0) {
+    if (state.isLoggedIn && state.networkStatus === 'online' && state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved').length > 0) {
       const timer = setTimeout(() => {
         dispatch({ type: 'SET_SHOW_SYNC_MODAL', payload: true });
       }, 600);
       return () => clearTimeout(timer);
     }
   }, [state.networkStatus, state.offlineQueue, state.isLoggedIn, dispatch]);
+
+  // Route-level permission check (must be before early return)
+  const routePermission = useMemo(() => {
+    for (const [route, permission] of Object.entries(ROUTE_PERMISSION_MAP)) {
+      if (location.pathname.startsWith(route)) {
+        return { route, permission };
+      }
+    }
+    return null;
+  }, [location.pathname]);
 
   if (!state.isLoggedIn) {
     return <Navigate to="/login" replace />;
@@ -33,7 +57,9 @@ export default function MobileLayout() {
   const isModuleRoute = ['/production', '/inbound', '/outbound', '/internal-qm'].some((route) => location.pathname.startsWith(route));
   const showBottomNav = !isHomeRoute && !isStandalonePage && !isUtilityRoute && isModuleRoute;
 
-  const pendingQueueCount = state.offlineQueue.filter((q) => q.status === 'Pending').length;
+  const canAccessRoute = !routePermission || hasPermission(state.role?.id, routePermission.permission);
+
+  const pendingQueueCount = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved').length;
   const errorQueueCount = state.errorQueue.filter((e) => e.status === 'Pending' || e.status === 'Need Review').length;
   const notificationCount = Math.min(99, state.activityLogs.length + pendingQueueCount + errorQueueCount);
 
@@ -87,7 +113,7 @@ export default function MobileLayout() {
         <div className="hidden md:block h-10 shrink-0 bg-ant-card" />
 
         {/* Header */}
-        <header className="sticky top-0 z-40 bg-ant-card/90 backdrop-blur-2xl border-b border-gray-100/60 px-4 h-12 flex items-center justify-between shrink-0">
+        <header className="app-header sticky top-0 z-40 bg-ant-card/90 backdrop-blur-2xl border-b border-gray-100/60 px-4 h-12 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <div className="w-7 h-7 rounded-lg bg-ant-sx flex items-center justify-center shrink-0">
               <i className="ri-building-2-line text-white text-xs" />
@@ -108,22 +134,22 @@ export default function MobileLayout() {
             )}
             <button
               onClick={() => { setShowNotifications((v) => !v); setShowAvatarMenu(false); }}
-              className="relative w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 active:scale-95 transition-all"
+              className="header-action-btn relative w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 active:scale-95 transition-all"
               aria-label="Thông báo"
             >
               <i className="ri-notification-3-line text-lg text-ant-text-secondary" />
               {notificationCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-ant-error text-white text-[9px] flex items-center justify-center font-bold animate-badge-pop">
+                <span className="header-badge absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-ant-error text-white text-[9px] flex items-center justify-center font-bold animate-badge-pop">
                   {notificationCount > 9 ? '9+' : notificationCount}
                 </span>
               )}
             </button>
             <button
               onClick={() => { setShowAvatarMenu((v) => !v); setShowNotifications(false); }}
-              className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 active:scale-95 transition-all"
+              className="header-action-btn w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 active:scale-95 transition-all"
               aria-label="Menu tài khoản"
             >
-              <div className="w-6 h-6 rounded-full bg-ant-sx/20 flex items-center justify-center">
+              <div className="header-avatar-inner w-6 h-6 rounded-full bg-ant-sx/20 flex items-center justify-center">
                 <span className="text-[11px] font-bold text-ant-sx">{getInitChar(state.currentUser)}</span>
               </div>
             </button>
@@ -196,9 +222,9 @@ export default function MobileLayout() {
                 <i className="ri-settings-3-line text-ant-text-secondary" />Cài đặt & phân quyền
               </Link>
               <div className="my-2 border-t border-gray-100" />
-              <MiniToggle label="Dark" icon="ri-moon-line" active={state.darkMode} onClick={() => dispatch({ type: 'TOGGLE_DARK_MODE' })} />
-              <MiniToggle label="High Contrast" icon="ri-sun-line" active={state.highContrast} onClick={() => dispatch({ type: 'TOGGLE_HIGH_CONTRAST' })} />
-              <MiniToggle label="Cold Storage" icon="ri-snowflake-line" active={state.coldStorageUI} onClick={() => dispatch({ type: 'TOGGLE_COLD_STORAGE_UI' })} />
+              <MiniToggle label="Chế độ tối" icon="ri-moon-line" active={state.darkMode} onClick={() => dispatch({ type: 'TOGGLE_DARK_MODE' })} />
+              <MiniToggle label="Tương phản cao" icon="ri-sun-line" active={state.highContrast} onClick={() => dispatch({ type: 'TOGGLE_HIGH_CONTRAST' })} />
+              <MiniToggle label="Kho lạnh" icon="ri-snowflake-line" active={state.coldStorageUI} onClick={() => dispatch({ type: 'TOGGLE_COLD_STORAGE_UI' })} />
               <div className="my-2 border-t border-gray-100" />
               <button onClick={handleLogout} className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-ant-error/5 text-sm font-bold text-ant-error">
                 <i className="ri-logout-box-r-line" />Đăng xuất
@@ -209,7 +235,15 @@ export default function MobileLayout() {
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto custom-scrollbar">
-          <Outlet />
+          {canAccessRoute ? (
+            <Outlet />
+          ) : (
+            <PermissionDenied
+              currentRole={state.role?.name}
+              moduleName={routePermission?.route}
+              requiredPermission={routePermission?.permission}
+            />
+          )}
         </main>
 
         {/* Bottom Nav spacer — prevents content from being hidden */}
@@ -241,8 +275,8 @@ function MiniToggle({ label, icon, active, onClick }: { label: string; icon: str
         <i className={`${icon} text-ant-text-secondary`} />
         {label}
       </span>
-      <span className={`relative w-9 h-5 rounded-full transition-colors ${active ? 'bg-ant-sx' : 'bg-gray-300'}`}>
-        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${active ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+      <span className={`mini-toggle-track relative w-9 h-5 rounded-full transition-colors ${active ? 'bg-ant-sx' : 'bg-gray-300'}`}>
+        <span className={`mini-toggle-thumb absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200 ${active ? 'left-[18px]' : 'left-0.5'}`} />
       </span>
     </button>
   );
@@ -250,7 +284,7 @@ function MiniToggle({ label, icon, active, onClick }: { label: string; icon: str
 
 function LogoutConfirmModal() {
   const { state, dispatch, logout } = useApp();
-  const pendingCount = state.offlineQueue.filter((q) => q.status === 'Pending').length;
+  const pendingCount = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved').length;
 
   return (
     <ConfirmModal

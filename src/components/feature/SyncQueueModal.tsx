@@ -12,13 +12,13 @@ export default function SyncQueueModal() {
   const pct = total > 0 ? Math.round((current / total) * 100) : 0;
 
   const queueItems = state.offlineQueue.filter((q) =>
-    q.status === 'Pending' || q.status === 'Syncing' || q.status === 'Failed'
+    q.status === 'Pending Sync' || q.status === 'Local Saved' || q.status === 'Syncing' || q.status === 'Sync Failed'
   );
 
   const getItemStatusVariant = (status: string): 'sync' | 'error' | 'success' | 'neutral' => {
     switch (status) {
       case 'Syncing': return 'sync';
-      case 'Failed': return 'error';
+      case 'Sync Failed': return 'error';
       case 'Synced': return 'success';
       default: return 'neutral';
     }
@@ -27,7 +27,7 @@ export default function SyncQueueModal() {
   const getItemStatusLabel = (status: string): string => {
     switch (status) {
       case 'Syncing': return 'Đang gửi';
-      case 'Failed': return 'Lỗi';
+      case 'Sync Failed': return 'Lỗi';
       case 'Synced': return 'OK';
       default: return 'Chờ';
     }
@@ -67,7 +67,7 @@ export default function SyncQueueModal() {
               key={item.queueId}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
                 item.status === 'Syncing' ? 'bg-ant-sync/5 border border-ant-sync/15' :
-                item.status === 'Failed' ? 'bg-ant-error/5 border border-ant-error/15' :
+                item.status === 'Sync Failed' ? 'bg-ant-error/5 border border-ant-error/15' :
                 item.status === 'Synced' ? 'bg-ant-sx/5 border border-ant-sx/15' :
                 'bg-gray-50'
               }`}
@@ -76,9 +76,9 @@ export default function SyncQueueModal() {
                 {item.status === 'Syncing' && (
                   <div className="w-4 h-4 border-2 border-ant-sync border-t-transparent rounded-full animate-spin" />
                 )}
-                {item.status === 'Failed' && <i className="ri-close-circle-line text-ant-error text-sm" />}
+                {item.status === 'Sync Failed' && <i className="ri-close-circle-line text-ant-error text-sm" />}
                 {item.status === 'Synced' && <i className="ri-checkbox-circle-line text-ant-sx text-sm" />}
-                {item.status === 'Pending' && <i className="ri-time-line text-ant-text-secondary text-sm" />}
+                {(item.status === 'Pending Sync' || item.status === 'Local Saved') && <i className="ri-time-line text-ant-text-secondary text-sm" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-ant-text truncate">{item.mockMovement}</p>

@@ -14,12 +14,31 @@ export default function HomePage() {
   const plantCode = state.plant?.code || 'MA';
   const roleHint = getRoleHomeHint(roleId);
 
+  // Network status display
+  const getNetworkDisplay = () => {
+    switch (state.networkStatus) {
+      case 'online': return { icon: 'ri-wifi-line', label: 'Online', color: 'text-ant-sx', bg: 'bg-ant-sx/10' };
+      case 'offline': return { icon: 'ri-wifi-off-line', label: 'Offline', color: 'text-ant-offline', bg: 'bg-ant-offline/10' };
+      case 'syncing': return { icon: 'ri-refresh-line', label: 'Đang đồng bộ', color: 'text-ant-sync', bg: 'bg-ant-sync/10' };
+      case 'error': return { icon: 'ri-cloud-off-line', label: 'Lỗi kết nối', color: 'text-ant-error', bg: 'bg-ant-error/10' };
+    }
+  };
+  const netDisplay = getNetworkDisplay();
+
+  const getModeIndicator = () => {
+    if (state.coldStorageUI) return { icon: 'ri-snowflake-line', label: 'KHO LẠNH', color: 'bg-sky-500' };
+    if (state.highContrast) return { icon: 'ri-sun-line', label: 'HIGH CONTRAST', color: 'bg-amber-500' };
+    if (state.darkMode) return { icon: 'ri-moon-line', label: 'DARK MODE', color: 'bg-gray-700' };
+    return null;
+  };
+  const modeIndicator = getModeIndicator();
+
   const poToday = state.productionOrders.filter((p) => p.plant === plantCode);
   const palletChoNhapKho = state.handlingUnits.filter((h) => h.plant === plantCode && h.status === 'Chờ nhập kho TP');
   const palletChoPutaway = state.handlingUnits.filter((h) => h.plant === plantCode && h.status === 'Chờ putaway');
   const odChoXuat = state.outboundDeliveries.filter((o) => o.plant === plantCode && (o.status === 'Chờ picking' || o.status === 'Đang picking'));
   const loBiKhoaQC = state.batches.filter((b) => b.plant === plantCode && b.status === 'Blocked Stock');
-  const queuePending = state.offlineQueue.filter((q) => q.status === 'Pending').length;
+  const queuePending = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved' || q.status === 'Pending User Confirm').length;
   const errorQueueCount = state.errorQueue.filter((e) => e.status === 'Pending' || e.status === 'Need Review').length;
 
   const handleSyncQueue = () => {
@@ -31,6 +50,22 @@ export default function HomePage() {
     <div className="min-h-screen bg-ant-bg flex flex-col">
       <main className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="p-4 space-y-4">
+          {/* ========== NETWORK STATUS + MODE INDICATOR ========== */}
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${netDisplay.bg}`}>
+              <i className={`${netDisplay.icon} ${netDisplay.color} text-xs`} />
+              <span className={`text-xxs font-bold ${netDisplay.color}`}>{netDisplay.label}</span>
+            </div>
+            {modeIndicator && (
+              <span className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-white text-xxs font-bold ${modeIndicator.color}`}>
+                <i className={`${modeIndicator.icon} text-[10px]`} />
+                {modeIndicator.label}
+              </span>
+            )}
+            <div className="flex-1" />
+            <span className="text-xxs text-ant-text-secondary">{state.shift?.name || ''}</span>
+          </div>
+
           {/* ========== SYNC QUEUE ALERT (all roles) ========== */}
           {queuePending > 0 && (
             <div className="rounded-2xl p-4 border bg-ant-offline/5 border-ant-offline/20">
@@ -44,11 +79,16 @@ export default function HomePage() {
                     <p className="text-xs text-ant-text-secondary">{queuePending} gói tin đang đợi đồng bộ</p>
                   </div>
                 </div>
-                {state.networkStatus === 'online' && (
-                  <button onClick={handleSyncQueue} className="px-4 py-2.5 rounded-xl bg-ant-offline text-white text-xs font-bold hover:opacity-90 active:scale-95 transition-all whitespace-nowrap cursor-pointer">
-                    <i className="ri-refresh-line mr-1" />Đồng bộ ngay
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  <Link to="/sync-confirm" className="px-3 py-2 rounded-xl bg-ant-offline/10 text-ant-offline text-xs font-bold hover:bg-ant-offline/20 active:scale-95 transition-all whitespace-nowrap cursor-pointer">
+                    Xác nhận
+                  </Link>
+                  {state.networkStatus === 'online' && (
+                    <button onClick={handleSyncQueue} className="px-4 py-2.5 rounded-xl bg-ant-offline text-white text-xs font-bold hover:opacity-90 active:scale-95 transition-all whitespace-nowrap cursor-pointer">
+                      <i className="ri-refresh-line mr-1" />Đồng bộ ngay
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -235,6 +275,8 @@ export default function HomePage() {
                   <QuickBtn icon="ri-plug-line" color="offline" label="Điện" onClick={() => navigate('/production/utility')} />
                   <QuickBtn icon="ri-drop-line" color="nk" label="Nước" onClick={() => navigate('/production/utility')} />
                   <QuickBtn icon="ri-fire-line" color="error" label="Hơi" onClick={() => navigate('/production/utility')} />
+                  <QuickBtn icon="ri-tools-line" color="xk" label="Kiểm tra TB" onClick={() => navigate('/production/device-check')} />
+                  <QuickBtn icon="ri-temp-cold-line" color="warning" label="Nhiệt độ kho" onClick={() => navigate('/production/temperature-alerts')} />
                 </div>
               </div>
 
@@ -243,8 +285,8 @@ export default function HomePage() {
                 <h3 className="text-xs font-bold text-ant-text-secondary uppercase tracking-wider mb-2.5">Việc của Kỹ thuật</h3>
                 <div className="space-y-1.5">
                   <TaskRow icon="ri-plug-line" color="ant-offline" label="Utility Logging cuối ca" count={3} link="/production/utility" />
-                  <TaskRow icon="ri-tools-line" color="ant-nk" label="Kiểm tra thiết bị" count={2} />
-                  <TaskRow icon="ri-alert-line" color="ant-warning" label="Cảnh báo nhiệt độ kho" count={0} />
+                  <TaskRow icon="ri-tools-line" color="ant-xk" label="Kiểm tra thiết bị" count={12} link="/production/device-check" />
+                  <TaskRow icon="ri-temp-cold-line" color="ant-warning" label="Cảnh báo nhiệt độ kho" count={3} link="/production/temperature-alerts" />
                 </div>
               </div>
             </>
@@ -315,7 +357,7 @@ export default function HomePage() {
                     </div>
                   )}
                   {errorQueueCount > 0 && (
-                    <Link to="/internal-qm/error-queue" className="flex items-center gap-3 p-3 rounded-xl bg-ant-warning/5 border border-ant-warning/10 active:scale-[0.98] transition-all">
+                    <Link to="/internal-qm/error-queue" className="no-cs-mega flex items-center gap-3 p-3 rounded-xl bg-ant-warning/5 border border-ant-warning/10 active:scale-[0.98] transition-all">
                       <div className="w-8 h-8 rounded-lg bg-ant-warning/10 flex items-center justify-center shrink-0">
                         <i className="ri-close-circle-line text-ant-warning text-sm" />
                       </div>
@@ -374,7 +416,7 @@ export default function HomePage() {
                   <h3 className="text-xs font-bold text-ant-text-secondary uppercase tracking-wider mb-2.5">Sẵn sàng xuất hóa đơn mock</h3>
                   <div className="space-y-1.5">
                     {state.outboundDeliveries.filter((o) => o.status === 'Đã xuất bến').map((od) => (
-                      <Link key={od.id} to={`/outbound/container-loading/${od.id}`} className="flex items-center gap-3 bg-ant-card rounded-2xl border border-ant-sx/20 px-4 py-3 active:scale-[0.98] transition-all">
+                      <Link key={od.id} to={`/outbound/container-loading/${od.id}`} className="no-cs-mega flex items-center gap-3 bg-ant-card rounded-2xl border border-ant-sx/20 px-4 py-3 active:scale-[0.98] transition-all">
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div className="w-9 h-9 rounded-lg bg-ant-sx/10 flex items-center justify-center shrink-0">
                             <i className="ri-bill-line text-ant-sx text-sm" />
@@ -429,6 +471,7 @@ export default function HomePage() {
                   <QuickBtn icon="ri-arrow-up-down-line" color="xk" label="FEFO" onClick={() => navigate('/outbound/fefo-picking/OD-2026-0098')} />
                   <QuickBtn icon="ri-shield-check-line" color="qm" label="QM Hold" onClick={() => navigate('/internal-qm/qm-hold')} />
                   <QuickBtn icon="ri-bar-chart-line" color="sx" label="Báo cáo" onClick={() => navigate('/reports')} />
+                  <QuickBtn icon="ri-dashboard-line" color="nk" label="Dashboard" onClick={() => navigate('/admin')} />
                 </div>
               </div>
 
@@ -448,7 +491,7 @@ export default function HomePage() {
                     </div>
                   )}
                   {errorQueueCount > 0 && (
-                    <Link to="/internal-qm/error-queue" className="flex items-center gap-3 p-3 rounded-xl bg-ant-warning/5 border border-ant-warning/10 active:scale-[0.98] transition-all">
+                    <Link to="/internal-qm/error-queue" className="no-cs-mega flex items-center gap-3 p-3 rounded-xl bg-ant-warning/5 border border-ant-warning/10 active:scale-[0.98] transition-all">
                       <div className="w-8 h-8 rounded-lg bg-ant-warning/10 flex items-center justify-center shrink-0">
                         <i className="ri-close-circle-line text-ant-warning text-sm" />
                       </div>
@@ -467,7 +510,7 @@ export default function HomePage() {
           {/* ========== PHÂN HỆ (tabs available for role) ========== */}
           <div>
             <h3 className="text-xs font-bold text-ant-text-secondary uppercase tracking-wider mb-2.5">Phân hệ</h3>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {[
                 { to: '/production', tab: 'production', icon: 'ri-tools-line', label: 'Sản xuất', colorBg: 'bg-ant-sx' },
                 { to: '/inbound', tab: 'inbound', icon: 'ri-archive-drawer-line', label: 'Nhập kho', colorBg: 'bg-ant-nk' },
@@ -477,7 +520,7 @@ export default function HomePage() {
                 <Link
                   key={tab.to}
                   to={tab.to}
-                  className="flex flex-col items-center gap-2 py-3.5 rounded-xl bg-ant-card border border-gray-100 active:scale-95 transition-all hover:border-gray-200"
+                  className="no-cs-mega flex flex-col items-center gap-2 py-3.5 rounded-xl bg-ant-card border border-gray-100 active:scale-95 transition-all hover:border-gray-200"
                 >
                   <div className={`w-9 h-9 rounded-xl ${tab.colorBg} flex items-center justify-center`}>
                     <i className={`${tab.icon} text-white text-sm`} />
@@ -499,16 +542,16 @@ export default function HomePage() {
 
 function SummaryCard({ icon, color, label, value, sub, highlight }: { icon: string; color: string; label: string; value: number; sub: string; highlight?: boolean }) {
   return (
-    <div className={`bg-ant-card rounded-2xl border p-4 min-h-[126px] cursor-default flex flex-col justify-between ${highlight ? 'border-ant-warning/30 bg-ant-warning/5' : 'border-gray-100'}`}>
-      <div className="flex items-start gap-2.5">
-        <div className={`w-8 h-8 rounded-xl bg-${color === 'warning' ? 'ant-warning' : color === 'error' ? 'ant-error' : color === 'offline' ? 'ant-offline' : color === 'sync' ? 'ant-sync' : color === 'qm' ? 'ant-qm' : `ant-${color}`}/10 flex items-center justify-center shrink-0`}>
+    <div className={`summary-card bg-ant-card rounded-2xl border min-h-[104px] cursor-default flex flex-col justify-between p-3 ${highlight ? 'border-ant-warning/30 bg-ant-warning/5' : 'border-gray-100'}`}>
+      <div className="flex items-start gap-2">
+        <div className={`w-7 h-7 rounded-lg bg-${color === 'warning' ? 'ant-warning' : color === 'error' ? 'ant-error' : color === 'offline' ? 'ant-offline' : color === 'sync' ? 'ant-sync' : color === 'qm' ? 'ant-qm' : `ant-${color}`}/10 flex items-center justify-center shrink-0`}>
           <i className={`${icon} text-${color === 'warning' ? 'ant-warning' : color === 'error' ? 'ant-error' : color === 'offline' ? 'ant-offline' : color === 'sync' ? 'ant-sync' : color === 'qm' ? 'ant-qm' : `ant-${color}`} text-xs`} />
         </div>
-        <span className="text-xs text-ant-text-secondary font-semibold leading-snug line-clamp-2 min-h-[30px]">{label}</span>
+        <span className="text-xs text-ant-text-secondary font-semibold leading-snug line-clamp-2 min-h-[28px]">{label}</span>
       </div>
       <div>
-        <p className={`text-2xl font-bold leading-none ${highlight ? 'text-ant-warning' : 'text-ant-text'}`}>{value}</p>
-        <p className="text-xxs text-ant-text-secondary mt-2 leading-snug line-clamp-2">{sub}</p>
+        <p className={`summary-value text-xl font-bold leading-none ${highlight ? 'text-ant-warning' : 'text-ant-text'}`}>{value}</p>
+        <p className="text-xxs text-ant-text-secondary mt-1.5 leading-snug line-clamp-2">{sub}</p>
       </div>
     </div>
   );
@@ -518,9 +561,9 @@ function QuickBtn({ icon, color, label, onClick }: { icon: string; color: string
   const colorMap: Record<string, string> = { sx: 'ant-sx', nk: 'ant-nk', xk: 'ant-xk', qm: 'ant-qm', error: 'ant-error', offline: 'ant-offline', warning: 'ant-warning' };
   const c = colorMap[color] || 'ant-sx';
   return (
-    <button onClick={onClick} className="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl bg-ant-card border border-gray-100 min-w-[92px] h-[98px] active:scale-95 transition-all hover:border-gray-200 cursor-pointer shrink-0">
-      <div className={`w-10 h-10 rounded-xl bg-${c}/10 flex items-center justify-center`}>
-        <i className={`${icon} text-${c} text-lg`} />
+    <button onClick={onClick} className="quick-btn flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-ant-card border border-gray-100 min-w-[80px] h-[84px] active:scale-95 transition-all hover:border-gray-200 cursor-pointer shrink-0">
+      <div className={`w-9 h-9 rounded-xl bg-${c}/10 flex items-center justify-center`}>
+        <i className={`${icon} text-${c} text-base`} />
       </div>
       <span className="text-xxs font-semibold text-ant-text text-center leading-tight line-clamp-2">{label}</span>
     </button>

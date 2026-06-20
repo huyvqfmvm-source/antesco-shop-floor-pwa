@@ -4,6 +4,7 @@ import { useApp, hasPermission } from '@/store/AppContext';
 import MultiRoleSignature from '@/components/base/MultiRoleSignature';
 import PermissionBanner from '@/components/base/PermissionBanner';
 import type { SignedInfo } from '@/components/base/MultiRoleSignature';
+import type { OfflineQueueItem } from '@/store/AppContext';
 
 export default function FGReceivingPage() {
   const { state, dispatch, addToast, addActivityLog, simulateAction } = useApp();
@@ -20,6 +21,7 @@ export default function FGReceivingPage() {
   const [discrepancyReason, setDiscrepancyReason] = useState('');
   const [prodSignInfo, setProdSignInfo] = useState<SignedInfo | null>(null);
   const [whSignInfo, setWhSignInfo] = useState<SignedInfo | null>(null);
+  const isOffline = state.networkStatus === 'offline';
 
   const steps = ['Quét pallet', 'OCR bảng kê', 'Đồng kiểm', 'Ký bàn giao', 'Xác nhận'];
 
@@ -79,6 +81,39 @@ export default function FGReceivingPage() {
 
   const handleConfirm = useCallback(() => {
     if (!canConfirm) return;
+
+    if (isOffline) {
+      const now = new Date();
+      const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const qty = actualCount * cartonWeight;
+
+      const queueItem: OfflineQueueItem = {
+        queueId: `off-fg-${Date.now()}`,
+        type: 'FG_RECEIVING',
+        user: state.currentUser,
+        role: state.role?.name || '',
+        plant: state.plant?.code || 'MA',
+        shift: state.shift?.name || '',
+        huId: scannedHU,
+        batchId: batch,
+        quantity: qty,
+        unit: 'KG',
+        reason: hasDiscrepancy ? discrepancyReason : undefined,
+        createdAt: timestamp,
+        status: 'Pending Sync',
+        retryCount: 0,
+        mockMovement: 'MIGO-101',
+        maxHoldHours: 24,
+      };
+
+      dispatch({ type: 'UPDATE_HANDLING_UNIT', payload: { id: scannedHU, updates: { status: 'Chờ đồng bộ nhập kho', qty: qty } } });
+      dispatch({ type: 'ADD_OFFLINE_QUEUE', payload: queueItem });
+      addActivityLog(state.currentUser, state.role?.name || '', 'Nhập kho TP (Offline)', `${scannedHU} — ${actualCount} thùng — ${qty} KG`, 'Chờ nhập kho TP', 'Chờ đồng bộ nhập kho', 'Lưu vào Offline Queue — MIGO-101');
+      addToast('warning', 'Đã lưu vào Offline Queue. Sẽ đồng bộ khi có mạng.');
+      navigate('/inbound');
+      return;
+    }
+
     simulateAction(
       'Nhập kho thành phẩm',
       `${scannedHU} — ${actualCount} thùng · ${(actualCount * cartonWeight).toLocaleString()} KG — Batch ${batch}`,
@@ -92,7 +127,7 @@ export default function FGReceivingPage() {
         navigate('/inbound');
       }
     );
-  }, [canConfirm, scannedHU, actualCount, batch, simulateAction, dispatch, addActivityLog, state.currentUser, state.role?.name, navigate, cartonWeight, mockCartons]);
+  }, [canConfirm, isOffline, scannedHU, actualCount, batch, hasDiscrepancy, discrepancyReason, cartonWeight, mockCartons, simulateAction, dispatch, addActivityLog, addToast, state, navigate]);
 
   const btnSize = coldUI ? 'h-16 text-base' : 'h-14 text-sm';
   const iconSize = coldUI ? 'text-2xl' : 'text-lg';
@@ -104,7 +139,7 @@ export default function FGReceivingPage() {
     <div className={`min-h-screen flex flex-col ${coldUI ? 'bg-black text-white' : 'bg-ant-bg'}`}>
       {/* Header */}
       <header className={`sticky top-0 z-30 px-4 py-3 flex items-center gap-3 shrink-0 ${coldUI ? 'bg-gray-900' : 'bg-ant-nk text-white'}`}>
-        <Link to="/inbound" className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${coldUI ? 'hover:bg-white/10' : 'hover:bg-white/10'}`}>
+        <Link to="/inbound" className={`no-cs-mega w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${coldUI ? 'hover:bg-white/10' : 'hover:bg-white/10'}`}>
           <i className={`ri-arrow-left-line ${coldUI ? 'text-white text-xl' : 'text-lg'}`} />
         </Link>
         <div className="flex-1 min-w-0">

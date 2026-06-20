@@ -58,7 +58,7 @@ export default function PendingListPage() {
     <div className="min-h-screen bg-ant-bg flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-ant-card border-b border-gray-100 px-4 py-3 flex items-center gap-3 shrink-0">
-        <Link to="/inbound" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
+        <Link to="/inbound" className="no-cs-mega w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
           <i className="ri-arrow-left-line text-lg text-ant-text-secondary" />
         </Link>
         <div className="flex-1 min-w-0">

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp, hasPermission, getPermissionExplanation } from '@/store/AppContext';
 import PermissionBanner from '@/components/base/PermissionBanner';
+import type { OfflineQueueItem } from '@/store/AppContext';
 
 const STEPS = [
   { key: 'scan', label: 'Quét ô kệ', icon: 'ri-layout-grid-line' },
@@ -90,6 +91,39 @@ export default function CycleCountPage() {
       return;
     }
 
+    const isOffline = state.networkStatus === 'offline';
+
+    if (isOffline) {
+      const now = new Date();
+      const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      const queueItem: OfflineQueueItem = {
+        queueId: `off-cc-${Date.now()}`,
+        type: 'CYCLE_COUNT',
+        user: state.currentUser,
+        role: state.role?.name || '',
+        plant: state.plant?.code || 'MA',
+        shift: state.shift?.name || '',
+        binId: MOCK_BIN_DATA.bin,
+        quantity: actual,
+        unit: 'KG',
+        reason: note,
+        photos: photos.map((p) => `photo-${p}`),
+        additionalData: { expectedPallets: MOCK_BIN_DATA.expectedPallets, actualPallets: scannedPallets.length, expectedQty: expectedTotal },
+        createdAt: timestamp,
+        status: 'Pending Sync',
+        retryCount: 0,
+        mockMovement: 'LI11N',
+        maxHoldHours: 24,
+      };
+
+      dispatch({ type: 'ADD_OFFLINE_QUEUE', payload: queueItem });
+      addActivityLog(state.currentUser, state.role?.name || '', 'Kiểm kê (Offline)', `${MOCK_BIN_DATA.bin} — ${scannedPallets.length}/${MOCK_BIN_DATA.expectedPallets} pallet — ${actual} KG`, isMatch ? 'Khớp' : 'Lệch', 'Chờ đồng bộ', 'Lưu vào Offline Queue — LI11N');
+      addToast('warning', 'Đã lưu vào Offline Queue. Sẽ đồng bộ khi có mạng.');
+      setResult({ match: isMatch, expected: expectedTotal, actual });
+      return;
+    }
+
     setIsConfirming(true);
     simulateAction(
       'Kiểm kê ô kệ',
@@ -119,7 +153,7 @@ export default function CycleCountPage() {
         setResult({ match: isMatch, expected: expectedTotal, actual });
       }
     );
-  }, [actualQty, scannedPallets.length, expectedTotal, photos.length, note, addToast, simulateAction, dispatch, state.plant?.code, state.currentUser, canCycleCount]);
+  }, [actualQty, scannedPallets.length, expectedTotal, photos.length, note, addToast, simulateAction, dispatch, state, canCycleCount]);
 
   const selectedPalletQty = scannedPallets.length * 500;
 

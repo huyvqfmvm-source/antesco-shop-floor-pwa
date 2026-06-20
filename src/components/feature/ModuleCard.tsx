@@ -28,7 +28,7 @@ export default function ModuleCard({ to, icon, label, sub, badge, badgeVariant, 
   return (
     <Link
       to={to}
-      className={`flex items-center gap-3.5 bg-ant-card rounded-xl border border-gray-100 p-4 active:scale-[0.98] transition-all hover:border-gray-200 cursor-pointer ${className}`}
+      className={`no-cs-mega flex items-center gap-3.5 bg-ant-card rounded-xl border border-gray-100 p-4 active:scale-[0.98] transition-all hover:border-gray-200 cursor-pointer ${className}`}
     >
       <div className={`w-11 h-11 rounded-xl ${cm.bg} flex items-center justify-center shrink-0`}>
         <i className={`${icon} ${cm.text} text-lg`} />

@@ -54,9 +54,24 @@ export default function InboundPage() {
         <h3 className="text-xs font-bold text-ant-text-secondary uppercase tracking-wider mb-2.5">Nghiệp vụ nhập kho</h3>
         <div className="space-y-2">
           <ModuleCard
+            to="/inbound/po-waiting" icon="ri-shopping-cart-line" label="PO chờ nhập"
+            sub="Danh sách PO · NCC · Vật tư · Ngày dự kiến"
+            badge={`${state.purchaseOrders.filter(p => p.status === 'Chưa nhập').length} chờ`} color="sx"
+          />
+          <ModuleCard
             to="/inbound/receive-rm" icon="ri-leaf-line" label="Tiếp nhận nguyên liệu tươi"
             sub="Quét PO · OCR xe & phiếu cân · Nhập QC"
             badge={plantRMs.length > 0 ? `${plantRMs.length} phiếu` : 'Mới'} color="sx"
+          />
+          <ModuleCard
+            to="/inbound/qc-inspection" icon="ri-microscope-line" label="QC đầu vào — Kiểm thu NL"
+            sub="BM-KTNL-01 · Ghi nhận QC · Phân loại · Ký KCS"
+            badge='BM-KTNL-01' color="qm"
+          />
+          <ModuleCard
+            to="/inbound/receipt-note" icon="ri-file-list-3-line" label="Phiếu nhập kho điện tử"
+            sub="PNK-01 · Sinh batch tạm · Ký TK/Thủ kho · PDF"
+            badge='PNK-01' color="nk"
           />
           <ModuleCard
             to="/inbound/fg-receiving" icon="ri-archive-drawer-line" label="Nhập kho thành phẩm & Đồng kiểm"

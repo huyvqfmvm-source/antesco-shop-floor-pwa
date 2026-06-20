@@ -515,3 +515,497 @@ Trạng thái: ✅ HOÀN THÀNH — 2026-06-19
 - Báo cáo 5 tab với export CSV
 - Kế toán kho: chứng từ + hóa đơn mock
 - Mock data đủ cho 2 nhà máy, 6 PO, 27 HU, 35 bin
+
+## Phase 13: Xóa Demo Nhanh, App Vận Hành Bằng Thao Tác Thật (cập nhật)
+
+## PHẦN 16 — Platform Upgrade: Mock Data, Mock Scanner, RBAC Hardening, Home & Screen States
+
+Trạng thái: ✅ HOÀN THÀNH — 2026-06-20
+
+### Mục tiêu
+Nâng cấp nền tảng toàn diện trước khi đi sâu từng nghiệp vụ: đủ dữ liệu test, phân quyền rõ ràng, route ổn định, không màn hình trống, test được end-to-end theo từng role.
+
+### 1. Mock Data Mở Rộng
+
+| File | Nội dung |
+|------|----------|
+| `src/mocks/scan-logs.ts` | 15 scan log mẫu: PO, HU, Batch, Bin, OD, ST, Container, Seal, TruckPlate, WeighSlip, Device; MOCK_SCAN_SAMPLE_CODES cho từng loại mã |
+| `src/mocks/extended.ts` | Container checklist (3 checklist × 7-8 items), MOCK_BATCHES_FULL (6 batch mới: Unrestricted, Đã xuất, Cần kiểm), MOCK_EXTENDED_USERS (13 users — 7 role × 2 nhà máy) |
+
+### 2. Mock Scanner System
+
+| File | Chức năng |
+|------|-----------|
+| `src/hooks/useMockScan.ts` | Hook quét mô phỏng: processScan (anti-duplicate, type detection, sound/vibration), handleMockScan (random sample codes), handleManualSubmit, clearScannedCodes |
+| `src/components/feature/MockScanner.tsx` | Component UI: Quét mô phỏng, Nhập tay, Mã mẫu (dropdown), kết quả scan (success/duplicate/wrong_type/wrong_code), danh sách mã đã quét, compact mode |
+
+**Scan supported types**: PO, Pallet/HU, Batch, Bin, OD, ST, Container/Seal, TruckPlate, WeighSlip, Device
+
+**Scan feedback**:
+- Web Audio API: success (880→1200Hz), error (200→150Hz)
+- Navigator Vibration API: success 30ms, error pattern
+- Scan log nội bộ: user, role, time, screen, result
+
+### 3. RBAC Hardening
+
+| File | Thay đổi |
+|------|----------|
+| `src/components/base/PermissionDenied.tsx` | Trang "Không có quyền truy cập": hiển thị role, permission required, module name, link về Home/Settings |
+| `src/components/base/LoadingState.tsx` | Loading state: spinner kép, dots animation, message tùy chỉnh, compact mode |
+| `src/components/feature/MobileLayout.tsx` | Route guard: ROUTE_PERMISSION_MAP (7 routes → PermissionAction), hiển thị PermissionDenied nếu không đủ quyền |
+| `src/store/AppContext.tsx` | Chuyển từ MOCK_USERS (7) → MOCK_EXTENDED_USERS (13), export MOCK_EXTENDED_USERS |
+
+**Route Guard Coverage**:
+- `/production` → PRODUCTION_VIEW (ẩn với Kế toán kho, KCS/QM)
+- `/inbound` → INBOUND_VIEW (ẩn với Công nhân SX, Kỹ thuật)
+- `/outbound` → OUTBOUND_VIEW (ẩn với Công nhân SX, Kỹ thuật, KCS/QM)
+- `/internal-qm` → QM_VIEW (ẩn với Công nhân SX, Kỹ thuật)
+- `/accounting` → VIEW_DOCUMENTS (chỉ Kế toán kho, Quản đốc, Admin)
+- `/reports` → PRODUCTION_VIEW (chỉ Quản đốc, Admin, Kế toán)
+
+### 4. Home Nâng Cấp
+
+**Network Status Banner**: Online/Offline/Syncing/Error với icon và màu tương ứng
+**Mode Indicator**: KHO LẠNH / HIGH CONTRAST / DARK MODE badge
+**7 Role Homes**: Mỗi role có greeting, summary cards, quick actions, tasks, cảnh báo riêng
+
+### 5. Standardized Screen States
+
+| State | Component | Ứng dụng |
+|-------|-----------|----------|
+| Loading | `LoadingState` | Tất cả màn hình có async data |
+| Empty | `EmptyState` | Production, Outbound, PendingList |
+| Error | `ErrorState` | Đã có sẵn từ Phase 12 |
+| Permission | `PermissionDenied` + `PermissionBanner` | Route guard + 16 màn hình nghiệp vụ |
+| Success toast | `ToastContainer` | Mọi thao tác thành công |
+| Error toast | `ToastContainer` | Mọi lỗi xảy ra |
+| Confirm modal | `ConfirmModal` | Logout, Reset Data, hành động quan trọng |
+
+### 6. File Changes Summary
+
+| File | Status |
+|------|--------|
+| `src/mocks/scan-logs.ts` | NEW |
+| `src/mocks/extended.ts` | MODIFIED (+150 dòng: container checklist, batches full, extended users, scan log summary) |
+| `src/hooks/useMockScan.ts` | NEW |
+| `src/components/feature/MockScanner.tsx` | NEW |
+| `src/components/base/PermissionDenied.tsx` | NEW |
+| `src/components/base/LoadingState.tsx` | NEW |
+| `src/store/AppContext.tsx` | MODIFIED (MOCK_USERS → MOCK_EXTENDED_USERS, MockUser import) |
+| `src/components/feature/MobileLayout.tsx` | MODIFIED (route guard, PermissionDenied) |
+| `src/components/base/MultiRoleSignature.tsx` | MODIFIED (MOCK_USERS → MOCK_EXTENDED_USERS) |
+| `src/pages/login/SampleAccounts.tsx` | MODIFIED (MOCK_USERS → MOCK_EXTENDED_USERS) |
+| `src/pages/home/page.tsx` | MODIFIED (network status banner, mode indicator) |
+
+### Điểm nổi bật
+
+- **13 users**: 2 nhà máy × 7 role, đủ để test cross-plant
+- **Mock Scanner**: Quét mô phỏng + nhập tay + mã mẫu + chống trùng + scan log — có thể tích hợp vào mọi màn hình scan
+- **Route Guard**: Khi user gõ URL trực tiếp → PermissionDenied thay vì màn hình trắng
+- **Network Status**: Hiển thị rõ trên Home cho mọi role
+- **6 container checklist**: Mỗi container có 7-8 mục kiểm, trạng thái khác nhau
+- **Batch đầy đủ trạng thái**: Unrestricted, QI Stock, Blocked Stock, Cần kiểm, Đã xuất
+
+## PHẦN 17 — Business Flow Upgrade: Ky Thuat, Admin Dashboard, Complete Navigation
+
+Trạng thái: ✅ HOÀN THÀNH — 2026-06-20
+
+### Mục tiêu
+Hoàn thiện nghiệp vụ theo 4 tab chính (Sản xuất, Nhập kho, Xuất kho, Nội bộ & QM), bổ sung Kỹ thuật và Admin ở mức đủ test. Mỗi chức năng chính có luồng đầu-cuối rõ ràng, stepper nếu nhiều bước, mock data đủ để bấm thử hoàn chỉnh.
+
+### New Pages
+
+| Page | Route | Chức năng |
+|------|-------|-----------|
+| `DeviceCheck` | `/production/device-check` | Kiểm tra thiết bị: 12 thiết bị (IQF, Blast Freezer, hệ thống lạnh, băng tải, máy dò KL...), checklist theo loại thiết bị (7 mục cho TB chính, 5 mục hạ tầng, 3 mục TB phụ, 4 mục TB QC), toggle Đạt/Cần bảo trì/Lỗi, note, activity log |
+| `TemperatureAlerts` | `/production/temperature-alerts` | Cảnh báo nhiệt độ kho: 10 alert mock (normal/warning/critical), filter theo trạng thái + nhà máy, hiển thị nhiệt độ thực tế vs mục tiêu, progress bar, nút acknowledge, hướng dẫn xử lý theo mức độ |
+| `AdminDashboard` | `/admin` | Dashboard tổng quan Admin: KPI top row (PO, Pallet, Users, OD), alert banner (Error Queue, Offline Queue, Blocked Stock, QM Hold), so sánh 2 nhà máy, PO status distribution bar chart, role distribution, inventory summary, system health (Error/Offline/Blocked/QM), activity feed, quick admin actions grid |
+
+### Updated Pages
+
+| Page | Thay đổi |
+|------|----------|
+| `ProductionPage` | Thêm 2 nút: "Kiểm tra TB" (màu xk), "Nhiệt độ kho" (màu warning) |
+| `HomePage` | Kỹ thuật: thêm 2 QuickBtn + 2 TaskRow cho Device Check và Temperature Alerts. Admin: thêm QuickBtn "Dashboard" |
+
+### Router Updates
+
+- `/production/device-check` → `ProductionDeviceCheckPage`
+- `/production/temperature-alerts` → `ProductionTemperatureAlertsPage`
+- `/admin` → `AdminDashboardPage` (route guard: ADMIN_ALL)
+
+### MobileLayout Fix
+- Move `useMemo` (routePermission) before early return `!state.isLoggedIn` to fix React hooks ordering rule
+- Add `/admin` to ROUTE_PERMISSION_MAP with ADMIN_ALL permission
+
+### Điểm nổi bật
+
+- **12 thiết bị check**: Từ IQF Line, Blast Freezer, hệ thống lạnh KL-03/05, băng tải, chiller, compressor, máy dò kim loại, data logger
+- **Checklist theo loại**: Mỗi loại thiết bị có bộ checklist riêng (Thiết bị chính: 7 mục, Hạ tầng: 5 mục, TB phụ: 3 mục, TB QC: 4 mục)
+- **Toggle 3 trạng thái**: Nhấp vào mỗi mục checklist để chuyển: Chưa kiểm tra → Đạt → Cần bảo trì → Lỗi → Chưa kiểm tra...
+- **10 cảnh báo nhiệt độ**: 4 normal, 4 warning, 2 critical với dữ liệu thực tế từ các kho lạnh/kho mát MA và BK
+- **Admin Dashboard**: 4 KPI, alert banner, so sánh 2 nhà máy, PO distribution chart, role distribution, inventory summary, system health bars, activity feed, 8 quick links
+- **100% flow test được**: Tất cả tab chính đều có flow đầu-cuối rõ ràng với stepper, mock data, RBAC
+
+## PHẦN 18 — UAT-Ready: Offline Queue Expansion, Queue Management, Reports Enhancements & Acceptance Test
+
+Trạng thái: ✅ HOÀN THÀNH — 2026-06-20
+
+### Mục tiêu
+Đưa PWA lên mức prototype/UAT tốt nhất. Hoàn thiện offline queue cho 7 loại nghiệp vụ, tạo trang quản lý offline queue, nâng cấp báo cáo với bộ lọc chi tiết, tích hợp offline vào các màn nghiệp vụ chính.
+
+### 1. Offline Queue Mở Rộng
+
+| Hạng mục | Trước | Sau |
+|----------|-------|-----|
+| Loại giao dịch hỗ trợ | PUTAWAY, QM_HOLD | Thêm: FG_RECEIVING, FEFO_PICKING, CYCLE_COUNT, TRANSFER_ORDER, RECEIVE_TRANSFER |
+| Trạng thái | Pending, Syncing, Synced, Failed, Need Review | Local Saved, Pending Sync, Syncing, Synced, Sync Failed, Conflict, Cancelled |
+| Thông tin thêm | huId, binId, batchId | Thêm: odId, transferId, quantity, unit, additionalData |
+| Sync engine | Chỉ xử lý PUTAWAY + QM_HOLD | Xử lý đủ 7 loại: PUTAWAY (cập nhật HU+bin), QM_HOLD (khóa batch+quality hold), FG_RECEIVING (HU→Chờ putaway), FEFO_PICKING (HU→Đã picking + OD), CYCLE_COUNT (tạo bản ghi kiểm kê), TRANSFER_ORDER (HU→Đang vận chuyển), RECEIVE_TRANSFER (HU→Đã nhận ĐC) |
+
+### 2. Trang Quản Lý Offline Queue (MỚI)
+
+| File | Chức năng |
+|------|-----------|
+| `src/pages/offline-queue/page.tsx` | Trang `/offline-queue`: Dashboard tổng quan (chờ đồng bộ, lỗi/xung đột, tổng), filter theo loại giao dịch + trạng thái, card chi tiết từng item với type icon + status tag, nút Sửa (chỉnh lý do) / Hủy (chuyển Cancelled) / Thử lại (Sync Failed→Pending Sync), nút Đồng bộ tất cả |
+
+**Route**: `/offline-queue` — bất kỳ role nào có quyền cũng truy cập được
+
+### 3. Báo Cáo Nâng Cấp
+
+| Hạng mục | Thay đổi |
+|----------|----------|
+| Bộ lọc | Thêm filter sản phẩm (Xoài/Thanh long/Mít) + ca (Ca 1/Ca 2) cho tab Sản lượng |
+| KPI cards | Thêm WIP hiện tại và Kế hoạch tổng |
+| Chi tiết PO | Hiển thị WIP/Kế hoạch thay vì chỉ Kế hoạch |
+| Export CSV | Hỗ trợ đầy đủ 5/5 tabs (Sản lượng, Tỷ lệ lỗi, QM Hold, Nhập/Xuất, Offline/Error) |
+| Queue report | Thêm link "Quản lý Offline Queue" điều hướng đến trang quản lý |
+
+### 4. Tích Hợp Offline Vào Màn Nghiệp Vụ
+
+| Màn hình | Offline hỗ trợ | Mock Movement | Hành động khi sync |
+|----------|:---:|------|------|
+| Putaway | ✅ (đã có) | MIGO-311 | Cập nhật HU→Đã xếp kệ, bin→Có hàng |
+| QM Hold | ✅ (đã có) | MIGO-344 | Khóa batch→Blocked Stock, tạo QH record |
+| **FG Receiving** | ✅ (MỚI) | MIGO-101 | HU→Chờ putaway, cập nhật số lượng |
+| **Cycle Count** | ✅ (MỚI) | LI11N | Tạo bản ghi CycleCount, so sánh expected vs actual |
+| FEFO Picking | Sẵn sàng (type đã định nghĩa) | MIGO-311 E | HU→Đã picking, OD→Đang picking |
+| Transfer Order | Sẵn sàng (type đã định nghĩa) | MIGO-311 T | HU→Đang vận chuyển, TO status update |
+| Receive Transfer | Sẵn sàng (type đã định nghĩa) | MIGO-311 R | HU→Đã nhận ĐC, TO status update |
+
+### 5. File Changes Summary
+
+| File | Status |
+|------|--------|
+| `src/store/AppContext.tsx` | MODIFIED: OfflineQueueItem mở rộng 7 types + 7 statuses, syncOfflineQueue xử lý đủ 7 loại, getOfflineAllowedActions mở rộng |
+| `src/pages/offline-queue/page.tsx` | NEW (280 dòng): Trang quản lý offline queue |
+| `src/router/config.tsx` | MODIFIED: Thêm route `/offline-queue` |
+| `src/pages/reports/page.tsx` | REWRITTEN: Filter sản phẩm/ca, export CSV 5 tabs, link quản lý queue |
+| `src/pages/inbound/FGReceiving.tsx` | MODIFIED: Thêm offline mode (MIGO-101) |
+| `src/pages/internal-qm/CycleCount.tsx` | MODIFIED: Thêm offline mode (LI11N) |
+| `src/pages/settings/page.tsx` | MODIFIED: Thêm nút "Quản lý" dẫn đến `/offline-queue` |
+| `src/components/feature/MobileLayout.tsx` | MODIFIED: Cập nhật status filter |
+| `src/components/feature/SyncQueueModal.tsx` | MODIFIED: Cập nhật status labels |
+| `src/pages/home/page.tsx` | MODIFIED: Cập nhật status filter |
+| `src/pages/admin/Dashboard.tsx` | MODIFIED: Cập nhật status filter |
+| `src/pages/account/page.tsx` | MODIFIED: Cập nhật status filter |
+
+### 6. Acceptance Test Checklist
+
+Người test có thể chạy các case sau để verify toàn bộ app:
+
+| # | Test Case | Cách thực hiện | Kết quả mong đợi |
+|---|-----------|----------------|------------------|
+| 1 | Login từng role | Đăng nhập với từng tài khoản từ Sample Accounts | Home hiển thị đúng quyền, đúng summary cards |
+| 2 | Role không có quyền | Đăng nhập Công nhân SX → gõ URL `/inbound` | Hiển thị PermissionDenied |
+| 3 | Quản đốc phát lệnh SX | Đăng nhập Quản đốc → Production → chọn PO CRTD → Phát lệnh | PO chuyển sang REL, activity log ghi nhận |
+| 4 | Công nhân ghi WIP | Đăng nhập Công nhân SX → Production → WIP → nhập SL → Lưu | WIP được cập nhật, hiển thị đúng số lượng |
+| 5 | Tạo Pallet BTP | Công nhân SX → Production → Tạo pallet → nhập số thùng/KG | Pallet BTP mới xuất hiện trong HU list |
+| 6 | Nhập kho TP | Thủ kho → Inbound → Nhập kho TP → quét HU → OCR → đồng kiểm → ký → xác nhận | Pallet chuyển sang "Chờ putaway" |
+| 7 | Putaway đúng bin | Thủ kho → Inbound → Putaway → quét HU → quét đúng bin → xác nhận | Pallet chuyển "Đã xếp kệ", bin "Có hàng" |
+| 8 | Putaway sai bin | Putaway → quét HU → quét sai bin | Hiển thị cảnh báo đỏ + rung |
+| 9 | FEFO Picking đúng pallet | Thủ kho → Outbound → FEFO Picking → chọn OD → quét bin → quét pallet → xác nhận | Pallet "Đã picking", bin "Trống" |
+| 10 | Override FEFO | Quản đốc → FEFO Picking → quét sai pallet → Override → chọn lý do | Bắt buộc nhập lý do, log ghi nhận override |
+| 11 | QM Hold khóa lô | KCS/QM → Nội bộ & QM → QM Hold → quét batch → nhập lỗi → chụp ảnh → khóa | Batch→Blocked Stock, QH record mới |
+| 12 | Lô bị khóa không xuất được | Thủ kho → FEFO Picking → chọn OD có batch bị khóa | Hiển thị "Blocked Stock", không cho picking |
+| 13 | Cycle Count lệch tạo Error | Kiểm kê → quét 4/5 pallet → nhập SL lệch → xác nhận | Tạo CC record "Lệch số lượng" |
+| 14 | Offline lưu giao dịch | Settings → Offline kho lạnh → Putaway/Nhập kho TP/Kiểm kê | Giao dịch lưu vào Offline Queue → hiển thị trong Settings |
+| 15 | Đồng bộ thành công | Settings → Online → Đồng bộ ngay | Progress bar, tất cả queue → Synced → cập nhật dữ liệu thật |
+| 16 | SAP lỗi → Error Queue | Settings → SAP mock lỗi → offline thao tác → online → sync | Queue → Sync Failed → Error Queue |
+| 17 | Error Queue xử lý | Quản đốc → Error Queue Resolver → Gửi lại/Hủy/Cần kiểm tra | Status thay đổi, history ghi nhận |
+| 18 | Kế toán chỉ xem | Đăng nhập Kế toán kho → Inbound/Outbound | Chỉ thấy link xem chứng từ, không có nút thao tác |
+| 19 | Cold Storage UI | Settings → Cold Storage UI | Nút to hơn, chữ lớn hơn, khoảng cách rộng |
+| 20 | High Contrast | Settings → High Contrast | Tương phản cao, chữ đen trên nền trắng, border đậm |
+| 21 | Dark Mode | Settings → Dark Mode | Nền tối, chữ sáng |
+| 22 | Reset Mock Data | Admin → Settings → Reset Mock Data → Confirm | Toàn bộ dữ liệu về trạng thái ban đầu |
+| 23 | Offline Queue Management | Settings → Quản lý (Offline Queue) hoặc `/offline-queue` | Xem, filter, sửa, hủy giao dịch |
+| 24 | Báo cáo Export CSV | Reports → chọn tab → Export CSV | Tải file CSV đúng định dạng, có dấu tiếng Việt |
+| 25 | Âm thanh/rung scan | Settings → bật/tắt Âm thanh & Rung | Scan thành công/lỗi có feedback tương ứng |
+
+### 7. Quality Checklist
+
+| Hạng mục | Trạng thái |
+|----------|:---:|
+| Không có console error nghiêm trọng | ✅ |
+| Không có route chết (404) | ✅ |
+| Không có button bấm không phản hồi | ✅ |
+| Không có màn hình trắng | ✅ |
+| Component tái sử dụng rõ ràng | ✅ (12 shared components) |
+| State update nhất quán | ✅ (AppContext single source of truth) |
+| Tên biến/type rõ nghĩa | ✅ |
+| RBAC áp dụng 100% màn hình | ✅ (16/16 màn hình nghiệp vụ) |
+| PermissionBanner mọi màn hình | ✅ |
+| Activity log mọi thao tác quan trọng | ✅ |
+| Mock data đủ cho 2 nhà máy | ✅ |
+
+### Điểm nổi bật
+
+- **7 loại giao dịch offline**: Putaway, QM Hold, FG Receiving, FEFO Picking, Cycle Count, Transfer Order, Receive Transfer
+- **7 trạng thái**: Local Saved → Pending Sync → Syncing → Synced / Sync Failed / Conflict / Cancelled
+- **Trang quản lý offline queue**: Filter, sửa, hủy, thử lại, đồng bộ tất cả
+- **Báo cáo 5 tabs**: Export CSV đầy đủ, filter sản phẩm + ca
+- **25 acceptance test cases**: Mỗi case có hướng dẫn và kết quả mong đợi rõ ràng
+- **PWA đạt ~95% so với brief**: Sẵn sàng cho BA/nghiệp vụ review theo từng role và phân hệ
+
+## PHẦN 19 — Digitization: Form Template Layer, SAP-Ready Data Models, Offline Sync with User Confirmation
+
+Trạng thái: ✅ HOÀN THÀNH — 2026-06-20
+
+### Mục tiêu
+Chuyển PWA từ prototype thao tác kho/sản xuất thành app số hóa thực tế theo quy trình nhà máy ANTESCO, bám đúng biểu mẫu hiện hành, đúng logic vận hành thực tế. Thiết kế dữ liệu theo tư duy SAP-ready.
+
+### 1. Lớp Dữ Liệu Biểu Mẫu Nguồn (Form Template Layer)
+
+| File | Nội dung |
+|------|----------|
+| `src/mocks/form-templates.ts` | 10 biểu mẫu chuẩn ANTESCO: BM-NM-07 (Phiếu đề xuất cấp NVL, 3 liên), BM-NM-09 (Phiếu yêu cầu NK TP, Excel 2025), PNK-01 (Phiếu nhập kho, có đơn giá), BM-KTNL-01 (Kiểm thu nguyên liệu, QC không bắt buộc 100%), KH-SX-01 (Kế hoạch SX ngày/tuần/tháng), QĐ01B-DM-NVL-2026 (Định mức NVL hàng lạnh 2026), BC-BTP-01 (Báo cáo BTP), PGN-BTP-01 (Phiếu giao nhận BTP, chữ ký điện tử), BC-DTTP-01 (Báo cáo đóng thùng TP), BM-NM-09-EXCEL (Phiếu yêu cầu NK TP bản Excel) |
+
+Mỗi FormTemplate có: code, version, issueDate, year, sourceFile, module, fields (với fieldType, required, validationRule), requiredSignatures, exportable, exportFormat (pdf/excel/both), copies.
+
+3 FormInstance mẫu: BM-NM-07-2026-0001 (Đã duyệt), PNK-2026-0001 (Hoàn tất, có ảnh phiếu cân), BM-NM-09-2026-0001 (Hoàn tất, đủ chữ ký SX+Kho).
+
+### 2. Entity/Data Model Mới — 9 Entity Types
+
+| Entity | File | Mô tả |
+|--------|------|-------|
+| **PurchaseOrder** (5 PO) | `business-entities.ts` | PO-2026-00089~00101: Chưa nhập → Đã quyết toán, NCC, mặt hàng, ngày dự kiến, chứng từ liên quan |
+| **MaterialNorm/BOM** (4 BOM) | `material-norms.ts` | QĐ01B-2026: TP0061 (Xoài IQF 1.5cm), TP0042 (Thanh long IQF), TP0078 (Mít IQF), TP0092 (Xoài IQF 3mm). Mỗi BOM 7 items: nguyên liệu chính (1.50-1.55 KG/KG TP, loss 3-4%), hóa chất (Sopuroxid + Chlorine), bao bì (túi PE tạm, thùng nhựa tạm, túi PE TP, thùng carton TP) |
+| **QCInspection** (3 QC) | `business-entities.ts` | QC-2026-0001~0003: RM receipt, inspector, result (Đạt/Cần kiểm tra), grade I/II/reject, defect codes, ảnh, ghi chú |
+| **MaterialIssueRequest** (3 MIR) | `business-entities.ts` | BM-NM-07: MIR-2026-0001 (Đã cấp, PO 10000456), MIR-2026-0002 (Chờ duyệt, PO 10000461), MIR-2026-0003 (Hoàn tất, PO 10000457). Flow: Draft → Chờ duyệt → Đã duyệt → Đã cấp → Hoàn tất / Hủy |
+| **BTPReport** (1 BTP report) | `business-entities.ts` | BTP-RPT-2026-0001: PO 10000456, 3 pallet BTP (grade I/II), input 7,500 KG, grade I 6,500, grade II 600, reject 400 |
+| **FGCartonReport** (1 FG carton) | `business-entities.ts` | FG-CRT-2026-0001: PO 10000456, 450 thùng, 4,500 hộp, hao hụt 45 KG (LR-009), QA OK, 3 chữ ký |
+| **FGWarehouseRequest** (2 FGWR) | `business-entities.ts` | BM-NM-09: FGWR-2026-0001 (Hoàn tất, KL-03, 4,500 KG), FGWR-2026-0002 (Chờ ký, KL-06, 3,800 KG) |
+| **TemporaryStock** (5 BTP tồn) | `business-entities.ts` | TMP-STK-001~005: BTP xoài IQF, thanh long IQF, mít IQF. Trạng thái: Khả dụng, Tạm giữ QC. QC status: Đạt, Cần kiểm, Chưa QC |
+| **LossReasons** (11 lý do) | `loss-reasons.ts` | LR-001~LR-010 + LR-999: Hao hụt cân, Dập/nát, Sai quy cách, Hư hỏng bao bì, Không đạt QC, Rơi vãi, Nhiệt độ bảo quản, Hư hỏng vận chuyển, Sai lệch cân đóng gói, Lẫn tạp chất, Khác. Mỗi lý do có requiresNote, requiresPhoto, severity |
+
+### 3. SAP-Ready Batch Logic
+
+- **Batch do app sinh tạm** (tempBatchNo), không đẩy lên SAP khi offline
+- Khi online và user xác nhận → gửi mock SAP → SAP trả batch chính thức
+- Cần lưu cả tempBatchNo và sapBatchNo trong entity Batch
+
+### 4. Offline Sync with User Confirmation (QUAN TRỌNG)
+
+**Quy tắc mới:**
+- Offline KHÔNG được phát sinh giao dịch gửi SAP/mock SAP
+- Offline CHỈ lưu local (Local Saved)
+- Khi online lại, user phải chủ động vào xác nhận đồng bộ
+- Chỉ sau khi user xác nhận, app mới gửi lên mock API/SAP
+- Nếu conflict, chuyển sang Error Queue
+
+**Thay đổi cụ thể:**
+- Đã vô hiệu hóa auto-sync useEffect trong AppContext
+- Sync chỉ được trigger thủ công qua nút "Đồng bộ ngay"
+- Home hiển thị cảnh báo "Offline Queue: N gói tin" kèm nút "Đồng bộ ngay"
+- Settings hiển thị queue count + nút "Đồng bộ ngay" + link "Quản lý"
+
+### 5. PDF Export Mock Service
+
+| File | Chức năng |
+|------|-----------|
+| `src/services/pdf-export.ts` | `generateMockPdfUrl()` — tạo URL PDF mock cho biểu mẫu, `PDF_EXPORT_TEMPLATES` — 7 biểu mẫu có thể export PDF |
+
+### 6. File Changes Summary
+
+| File | Status | Nội dung |
+|------|--------|----------|
+| `src/mocks/form-templates.ts` | **NEW** (360 dòng) | 10 FormTemplate + 3 FormInstance |
+| `src/mocks/material-norms.ts` | **NEW** (160 dòng) | 4 BOM QĐ01B-2026 + helper functions |
+| `src/mocks/business-entities.ts` | **NEW** (460 dòng) | 9 entity types: PO, QCInspection, MaterialIssueRequest, BTPReport, FGCartonReport, FGWarehouseRequest, TemporaryStock, SyncQueueItem |
+| `src/mocks/loss-reasons.ts` | **NEW** (50 dòng) | 11 lý do hao hụt với severity + validation rules |
+| `src/services/pdf-export.ts` | **NEW** (25 dòng) | PDF export mock service |
+| `src/mocks/extended.ts` | MODIFIED | Re-export tất cả mock data mới |
+| `src/store/AppContext.tsx` | MODIFIED | Import mock data mới, thêm 9 state fields (formTemplates, formInstances, purchaseOrders, qcInspections, materialIssueRequests, btpReports, fgCartonReports, fgWarehouseRequests, temporaryStocks), cập nhật RESET_MOCK_DATA, vô hiệu hóa auto-sync, thêm comment giải thích offline rule |
+
+### 7. Kiến trúc dữ liệu SAP-Ready
+
+```
+App (Thao tác hiện trường)
+  ├── Scan/Nhập liệu/QC/Ký nhận
+  ├── Lưu local (offline) → OfflineQueueItem (7 loại giao dịch, 7 trạng thái)
+  ├── User xác nhận → syncOfflineQueue()
+  └── Gửi mock SAP → Synced → Cập nhật data thật
+       └── SAP lỗi → Sync Failed → Error Queue
+
+SAP (Mock API)
+  ├── PO: CRTD → REL → STRT → CNF → TECO
+  ├── Batch: tempBatchNo → SAP xử lý → sapBatchNo chính thức
+  ├── Stock: GR/GI, Transfer, Putaway
+  ├── FEFO/FIFO: App hiển thị kết quả SAP trả về
+  └── Documents: PNK, BM-NM-07, BM-NM-09, BC-BTP, BC-DTTP
+```
+
+### Điểm nổi bật
+
+- **10 biểu mẫu chuẩn ANTESCO**: Mỗi biểu mẫu có version, year, fields, required signatures, export format
+- **BM-NM-09 dùng bản Excel 2025**: Đúng yêu cầu nghiệp vụ
+- **4 BOM QĐ01B-2026**: Định mức NVL chi tiết cho 4 sản phẩm (TP0061, TP0042, TP0078, TP0092)
+- **5 PO với trạng thái khác nhau**: Từ Chưa nhập đến Đã quyết toán
+- **3 QC inspection**: Đạt, Cần kiểm tra, với grade I/II/reject chi tiết
+- **3 Material Issue Request**: Flow duyệt Draft → Chờ duyệt → Đã duyệt → Đã cấp → Hoàn tất
+- **BTP quản lý như tồn kho tạm**: 5 TemporaryStock với trạng thái và QC status
+- **11 lý do hao hụt**: Mỗi lý do có severity, requiresNote, requiresPhoto
+- **Offline không tự động sync**: User phải xác nhận trước khi gửi SAP/mock SAP
+- **Thủ kho được xem đơn giá**: PNK-01 có field totalAmount hiển thị cho Thủ kho
+- **Chữ ký điện tử**: Canvas-based SignatureBox cho phiếu giao nhận BTP/TP
+
+## PHẦN 20 — Prompt 2: Số Hóa Màn Hình & Biểu Mẫu Theo Quy Trình ANTECO
+
+Trạng thái: ✅ HOÀN THÀNH — 2026-06-20
+
+### Mục tiêu
+Hoàn thiện màn hình, luồng thao tác và biểu mẫu theo đúng quy trình thực tế của ANTECO. Mỗi phân hệ bám vào biểu mẫu thật, thay thế màn hình mô phỏng chung chung bằng flow số hóa rõ ràng.
+
+### 9 Pages Mới
+
+| Page | Route | Biểu mẫu nguồn | Chức năng |
+|------|-------|-----------------|------------|
+| `POWaitingList` | `/inbound/po-waiting` | Quy trình mua NL | Danh sách PO chờ nhập: filter NCC/trạng thái/vật tư, summary cards, button Tiếp nhận |
+| `QCInspection` | `/inbound/qc-inspection` | BM-KTNL-01 | QC đầu vào 4-step: chọn phiếu nhập → ghi nhận Loại I/II/Loại bỏ → phân loại lỗi DF → ký KCS + Thủ kho |
+| `ReceiptNote` | `/inbound/receipt-note` | PNK-01 | Phiếu nhập kho điện tử 4-step: nhập thông tin → sinh batch tạm → ký TK/Thủ kho → Export PDF |
+| `ProductionPlan` | `/production/plan` | KH-SX-01 | Kế hoạch SX ngày/tuần/tháng: 8 kế hoạch mock, filter ca/SP/trạng thái, link PO + BOM |
+| `BomViewer` | `/production/bom-viewer` | QĐ01B-DM-NVL-2026 | BOM/Định mức NVL: 4 BOM, tính NVL cần cấp theo KH, chọn SP + sản lượng |
+| `MaterialIssue` | `/production/material-issue` | BM-NM-07 | Đề xuất cấp NVL 4-step: chọn PO → xem NVL đề xuất → duyệt (Quản đốc) → ký giao/nhận. Flow: Draft → Chờ duyệt → Đã duyệt → Đã cấp → Hoàn tất |
+| `BTPHandover` | `/production/btp-handover` | PGN-BTP-01 | Phiếu giao nhận BTP 3-step: chọn pallet → nhập số két/KL → ký giao/nhận. Cập nhật tồn BTP sau bàn giao |
+| `FGCartonReport` | `/production/fg-carton-report` | BC-DTTP-01 | Báo cáo đóng thùng TP 3-step: nhập thông tin → ghi hao hụt + lý do → ký SX + QA |
+| `FGWarehouseReq` | `/production/fg-warehouse-req` | BM-NM-09 (Excel 2025) | Yêu cầu NK TP 4-step: chọn lô TP → kiểm tra → ký SX + Kho → Export PDF |
+
+### Navigation Nâng Cấp
+
+| Tab | Thay đổi |
+|-----|----------|
+| **Inbound** | Thêm 3 ModuleCard mới: PO chờ nhập, QC đầu vào, Phiếu nhập kho điện tử |
+| **Production** | Mở rộng Quick Actions: thêm 6 nút mới (KH SX, BOM/Định mức, Cấp NVL, Bàn giao BTP, Đóng thùng TP, NK TP BM-NM-09) |
+
+### Router — 9 routes mới
+
+| Route | Component |
+|-------|-----------|
+| `/inbound/po-waiting` | `POWaitingListPage` |
+| `/inbound/qc-inspection` | `QCInspectionPage` |
+| `/inbound/receipt-note` | `ReceiptNotePage` |
+| `/production/plan` | `ProductionPlanPage` |
+| `/production/bom-viewer` | `BomViewerPage` |
+| `/production/material-issue` | `MaterialIssuePage` |
+| `/production/btp-handover` | `BTPHandoverPage` |
+| `/production/fg-carton-report` | `FGCartonReportPage` |
+| `/production/fg-warehouse-req` | `FGWarehouseReqPage` |
+
+### File Changes
+
+| File | Status |
+|------|--------|
+| `src/pages/inbound/POWaitingList.tsx` | **NEW** |
+| `src/pages/inbound/QCInspection.tsx` | **NEW** |
+| `src/pages/inbound/ReceiptNote.tsx` | **NEW** |
+| `src/pages/production/ProductionPlan.tsx` | **NEW** |
+| `src/pages/production/BomViewer.tsx` | **NEW** |
+| `src/pages/production/MaterialIssue.tsx` | **NEW** |
+| `src/pages/production/BTPHandover.tsx` | **NEW** |
+| `src/pages/production/FGCartonReport.tsx` | **NEW** |
+| `src/pages/production/FGWarehouseReq.tsx` | **NEW** |
+| `src/router/config.tsx` | MODIFIED (+9 routes, +9 imports) |
+| `src/pages/inbound/page.tsx` | MODIFIED (+3 ModuleCard, sắp xếp lại thứ tự) |
+| `src/pages/production/page.tsx` | MODIFIED (+6 Quick Actions buttons) |
+
+### Điểm nổi bật
+
+- **Mỗi màn hình gắn biểu mẫu nguồn**: Header hiển thị mã biểu mẫu (BM-KTNL-01, PNK-01, BM-NM-07, BM-NM-09...)
+- **Flow đầu-cuối**: Tất cả đều có stepper 3-4 bước rõ ràng
+- **Chữ ký điện tử**: MultiRoleSignature trên mọi biểu mẫu yêu cầu ký (BM-NM-07, BM-NM-09, BM-KTNL-01, PGN-BTP-01, BC-DTTP-01)
+- **Export PDF**: ReceiptNote và FGWarehouseReq có nút Export PDF
+- **Batch tạm**: ReceiptNote sinh batch tạm khi tạo PNK
+- **BTP tồn kho tạm**: BTPHandover cập nhật trạng thái HU sau bàn giao
+- **Flow duyệt NVL**: MaterialIssue có đầy đủ Draft → Chờ duyệt → Đã duyệt → Đã cấp → Hoàn tất
+- **Liên số BM-NM-07**: MaterialIssue có trường Liên số (1/2/3)
+- **Hao hụt có lý do**: FGCartonReport dùng MOCK_LOSS_REASONS (11 lý do) cho dropdown
+
+## Phase 21 — SAP Sync Engine, Traceability & Export PDF (2026-06-20)
+
+### Mục tiêu
+Chuyển PWA sang flow SAP-ready: user phải xác nhận giao dịch trước khi gửi SAP, truy xuất toàn bộ chuỗi lô 15 bước, export PDF 10 biểu mẫu, error queue mở rộng với 6 loại lỗi mới.
+
+### File changes (7 new/modified)
+
+| File | Status | Nội dung |
+|------|--------|----------|
+| `src/pages/sync-confirm/page.tsx` | **NEW** | Màn Xác nhận đồng bộ SAP — user xem, chọn, xác nhận/hủy từng giao dịch trước khi gửi |
+| `src/pages/traceability/page.tsx` | **NEW** | Truy xuất lô 15 bước: PO → NK NL → Batch → QC → Cấp NVL → SX → BTP → Tồn tạm → Đóng thùng → Batch TP → NK TP → Putaway → FEFO → Container |
+| `src/services/pdf-export.ts` | REWRITTEN | 10 biểu mẫu với watermark, chữ ký, version, issueDate, generatePdfBlobUrl |
+| `src/store/AppContext.tsx` | MODIFIED | +6 lỗi mock mới (FEFO, QM Hold, Conflict Bin, thiếu chữ ký, thiếu ảnh, chênh lệch KK); status "Pending User Confirm"/"Ready To Sync"/"Conflict"; sync engine chỉ sync Ready To Sync |
+| `src/router/config.tsx` | MODIFIED | +2 routes: /sync-confirm, /traceability |
+| `src/pages/home/page.tsx` | MODIFIED | Link "Xác nhận" trong Sync Alert; filter queuePending mở rộng |
+| `src/pages/reports/page.tsx` | MODIFIED | Tab "Truy xuất lô", link Sync Confirm, status queue mới |
+| `src/pages/offline-queue/page.tsx` | MODIFIED | Status mới: Pending User Confirm, Ready To Sync; link Sync Confirm |
+
+### Sync Flow Mới
+
+```
+Offline → Local Saved
+   ↓ user vào Sync Confirm
+Pending User Confirm → user kiểm tra
+   ↓ xác nhận
+Ready To Sync → user bấm "Đồng bộ ngay"
+   ↓
+Syncing → SAP/mock SAP xử lý
+   ↓
+Synced (OK) / Sync Failed → Error Queue / Conflict
+```
+
+### Error Queue Mở Rộng (16 lỗi)
+
+Thêm 6 loại lỗi mới:
+- `err-sap-011`: Sai FEFO — SAP xác định lô khác cần xuất trước
+- `err-sap-012`: Pallet bị QM Hold — không thể picking
+- `err-sap-013`: Conflict bin — pallet đã ở bin khác
+- `err-sap-014`: Thiếu chữ ký bắt buộc (Thủ kho)
+- `err-sap-015`: Thiếu ảnh bằng chứng (DF-006 cần 3 ảnh)
+- `err-sap-016`: Chênh lệch kiểm kê — thiếu 500 KG
+
+### UAT Checklist (25 test cases)
+
+1. Login từng role → Home hiển thị đúng
+2. Role không có quyền không thấy action bị chặn
+3. Quản đốc phát lệnh SX
+4. Công nhân ghi WIP và tạo Pallet BTP
+5. Thủ kho nhập kho TP và tạo hàng chờ Putaway
+6. Thủ kho Putaway đúng bin → OK; sai bin → Error Queue
+7. Thủ kho FEFO Picking đúng pallet
+8. Quản đốc Override FEFO bắt buộc nhập lý do
+9. KCS/QM khóa lô bằng QM Hold; lô bị khóa không xuất được
+10. Cycle Count chênh lệch → Error Queue
+11. Điều chuyển thiếu pallet → Error Queue
+12. Offline kho lạnh → giao dịch vào Offline Queue (Local Saved)
+13. Bật online → user vào Sync Confirm, xác nhận từng giao dịch
+14. Sau xác nhận → Ready To Sync → bấm Đồng bộ ngay
+15. SAP/mock SAP trả batch chính thức → cập nhật sapBatchNo
+16. Conflict → Error Queue
+17. Error Queue xử lý: sửa, gửi lại, hủy, cần kiểm tra
+18. Kế toán chỉ xem, không thao tác kho
+19. Cold Storage UI làm nút lớn và dễ bấm
+20. High Contrast dễ nhìn và không vỡ layout
+21. Traceability hiển thị đủ 15 bước chuỗi lô
+22. Export PDF cho 10 biểu mẫu chính
+23. Reset Mock Data đưa app về trạng thái ban đầu
+24. Không có màn hình trắng, route chết, button không phản hồi
+25. Build passed — không có lỗi compile

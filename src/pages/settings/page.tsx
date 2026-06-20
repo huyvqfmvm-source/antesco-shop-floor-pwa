@@ -108,7 +108,7 @@ export default function SettingsPage() {
   const [adminDepartmentDraft, setAdminDepartmentDraft] = useState(state.currentUserData?.department || '');
   const showLegacyUserCard = false;
 
-  const pendingQueueCount = state.offlineQueue.filter((q) => q.status === 'Pending').length;
+  const pendingQueueCount = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved').length;
 
   const handleNetworkChange = (status: NetworkStatus) => {
     dispatch({ type: 'SET_NETWORK', payload: status });
@@ -199,7 +199,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-ant-bg flex flex-col">
-      <header className="sticky top-0 z-40 bg-ant-card/95 backdrop-blur-xl border-b border-gray-100 px-4 h-14 flex items-center gap-3 shrink-0">
+      <header className="settings-header sticky top-0 z-40 bg-ant-card/95 backdrop-blur-xl border-b border-gray-100 px-4 h-14 flex items-center gap-3 shrink-0">
         <button onClick={() => navigate('/home')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 active:scale-90 transition-all cursor-pointer">
           <i className="ri-arrow-left-line text-lg text-ant-text" />
         </button>
@@ -479,7 +479,7 @@ export default function SettingsPage() {
               <div className="min-w-0 mr-3 flex-1">
                 <div className="flex items-center gap-2 mb-0.5">
                   <div className="w-5 h-5 rounded-md bg-gray-900 flex items-center justify-center"><i className="ri-moon-line text-white text-xs" /></div>
-                  <p className="text-sm font-bold text-ant-text">Dark Mode</p>
+                  <p className="text-sm font-bold text-ant-text">Chế độ tối</p>
                 </div>
                 <p className="text-xxs text-ant-text-secondary">Nền tối giảm mỏi mắt khi dùng lâu, tiết kiệm pin OLED</p>
               </div>
@@ -498,7 +498,7 @@ export default function SettingsPage() {
               <div className="min-w-0 mr-3 flex-1">
                 <div className="flex items-center gap-2 mb-0.5">
                   <div className="w-5 h-5 rounded-md bg-ant-sx flex items-center justify-center"><i className="ri-sun-line text-white text-xs" /></div>
-                  <p className="text-sm font-bold text-ant-text">High Contrast</p>
+                  <p className="text-sm font-bold text-ant-text">Tương phản cao</p>
                 </div>
                 <p className="text-xxs text-ant-text-secondary">Tương phản cực cao — dùng ngoài trời nắng gắt, màn hình bị chói</p>
               </div>
@@ -517,7 +517,7 @@ export default function SettingsPage() {
               <div className="min-w-0 mr-3 flex-1">
                 <div className="flex items-center gap-2 mb-0.5">
                   <div className="w-5 h-5 rounded-md bg-ant-nk flex items-center justify-center"><i className="ri-snowflake-line text-white text-xs" /></div>
-                  <p className="text-sm font-bold text-ant-text">Cold Storage UI</p>
+                  <p className="text-sm font-bold text-ant-text">Giao diện kho lạnh</p>
                 </div>
                 <p className="text-xxs text-ant-text-secondary">Nút to, chữ lớn, layout đơn giản — tối ưu khi đeo găng tay kho lạnh</p>
               </div>
@@ -546,9 +546,14 @@ export default function SettingsPage() {
               <div className="w-10 h-10 rounded-xl bg-ant-offline/10 flex items-center justify-center"><i className="ri-cloud-line text-lg text-ant-offline" /></div>
               <div><p className="text-sm font-bold text-ant-offline">{pendingQueueCount} gói tin đang đợi</p><p className="text-xxs text-ant-text-secondary">Đồng bộ tự động khi có mạng</p></div>
             </div>
-            <button onClick={() => syncOfflineQueue()} disabled={state.networkStatus === 'offline'} className={`w-full py-3 rounded-xl text-sm font-bold transition-all active:scale-[0.98] cursor-pointer ${state.networkStatus === 'offline' ? 'bg-gray-200 text-ant-text-secondary cursor-not-allowed' : 'bg-ant-offline text-white hover:opacity-90'}`}>
-              <i className="ri-refresh-line mr-1" />{state.networkStatus === 'offline' ? 'Cần Online để đồng bộ' : 'Đồng bộ ngay'}
-            </button>
+            <div className="flex gap-2 mb-3">
+              <button onClick={() => syncOfflineQueue()} disabled={state.networkStatus === 'offline'} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all active:scale-[0.98] cursor-pointer ${state.networkStatus === 'offline' ? 'bg-gray-200 text-ant-text-secondary cursor-not-allowed' : 'bg-ant-offline text-white hover:opacity-90'}`}>
+                <i className="ri-refresh-line mr-1" />{state.networkStatus === 'offline' ? 'Cần Online để đồng bộ' : 'Đồng bộ ngay'}
+              </button>
+              <Link to="/offline-queue" className="py-3 px-4 rounded-xl border border-ant-offline/30 text-ant-offline text-sm font-bold flex items-center gap-1.5 hover:bg-ant-offline/5 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap">
+                <i className="ri-list-check" />Quản lý
+              </Link>
+            </div>
           </div>
         )}
 
@@ -578,8 +583,8 @@ export default function SettingsPage() {
 
 function ToggleSwitch({ active, activeColor, onToggle }: { active: boolean; activeColor: string; onToggle: () => void }) {
   return (
-    <button onClick={onToggle} className={`relative w-11 h-6 rounded-full transition-colors shrink-0 cursor-pointer ${active ? activeColor : 'bg-gray-300'}`}>
-      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${active ? 'translate-x-[22px]' : 'translate-x-[2px]'}`} />
+    <button onClick={onToggle} className={`cs-toggle relative w-11 h-6 rounded-full transition-colors shrink-0 cursor-pointer ${active ? activeColor : 'bg-gray-300'}`}>
+      <div className={`cs-toggle-thumb absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200 ${active ? 'left-[22px]' : 'left-0.5'}`} />
     </button>
   );
 }

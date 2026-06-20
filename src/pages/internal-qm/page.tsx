@@ -10,7 +10,7 @@ export default function InternalQMPage() {
   const blockedBatches = state.batches.filter((b) => b.status === 'Blocked Stock');
   const transfersInTransit = state.transferOrders.filter((t) => t.status.includes('Transit') || t.status === 'Đang vận chuyển');
   const cycleCountsToday = state.cycleCounts.filter((c) => c.createdDate === '2026-06-16');
-  const errorQueueCount = state.errorQueue.filter((e) => e.status === 'Pending' || e.status === 'Need Review').length;
+  const errorQueueCount = state.errorQueue.filter((e: any) => e.status === 'Pending' || e.status === 'Need Review').length;
 
   return (
     <div className="p-4 space-y-4 min-h-screen bg-ant-bg">

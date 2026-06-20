@@ -132,7 +132,7 @@ export default function QMHoldPage() {
         photos: photos.map((p) => `photo-${p}`),
         reason: defectText,
         createdAt: timestamp,
-        status: 'Pending',
+        status: 'Pending Sync',
         retryCount: 0,
         mockMovement: 'MIGO-344',
         maxHoldHours: 24,

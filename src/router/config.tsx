@@ -11,6 +11,8 @@ import ProductionWipPage from "@/pages/production/WipPage";
 import ProductionPalletPage from "@/pages/production/PalletPage";
 import ProductionConfirmPage from "@/pages/production/ConfirmPage";
 import ProductionUtilityPage from "@/pages/production/UtilityPage";
+import ProductionDeviceCheckPage from "@/pages/production/DeviceCheck";
+import ProductionTemperatureAlertsPage from "@/pages/production/TemperatureAlerts";
 import InboundPage from "@/pages/inbound/page";
 import ReceiveRMPage from "@/pages/inbound/ReceiveRM";
 import FGReceivingPage from "@/pages/inbound/FGReceiving";
@@ -30,8 +32,21 @@ import ErrorQueueResolverPage from "@/pages/internal-qm/ErrorQueueResolver";
 import SettingsPage from "@/pages/settings/page";
 import ReportsPage from "@/pages/reports/page";
 import AccountingPage from "@/pages/accounting/page";
+import AdminDashboardPage from "@/pages/admin/Dashboard";
+import OfflineQueuePage from "@/pages/offline-queue/page";
+import SyncConfirmPage from "@/pages/sync-confirm/page";
+import TraceabilityPage from "@/pages/traceability/page";
 import MobileLayout from "@/components/feature/MobileLayout";
 import NotFound from "@/pages/NotFound";
+import ProductionPlanPage from "@/pages/production/ProductionPlan";
+import BomViewerPage from "@/pages/production/BomViewer";
+import MaterialIssuePage from "@/pages/production/MaterialIssue";
+import BTPHandoverPage from "@/pages/production/BTPHandover";
+import FGCartonReportPage from "@/pages/production/FGCartonReport";
+import FGWarehouseReqPage from "@/pages/production/FGWarehouseReq";
+import POWaitingListPage from "@/pages/inbound/POWaitingList";
+import QCInspectionPage from "@/pages/inbound/QCInspection";
+import ReceiptNotePage from "@/pages/inbound/ReceiptNote";
 
 const routes: RouteObject[] = [
   {
@@ -72,6 +87,14 @@ const routes: RouteObject[] = [
           { path: "pallet/:id", element: <ProductionPalletPage /> },
           { path: "confirm/:id", element: <ProductionConfirmPage /> },
           { path: "utility", element: <ProductionUtilityPage /> },
+          { path: "device-check", element: <ProductionDeviceCheckPage /> },
+          { path: "temperature-alerts", element: <ProductionTemperatureAlertsPage /> },
+          { path: "plan", element: <ProductionPlanPage /> },
+          { path: "bom-viewer", element: <BomViewerPage /> },
+          { path: "material-issue", element: <MaterialIssuePage /> },
+          { path: "btp-handover", element: <BTPHandoverPage /> },
+          { path: "fg-carton-report", element: <FGCartonReportPage /> },
+          { path: "fg-warehouse-req", element: <FGWarehouseReqPage /> },
         ],
       },
       {
@@ -82,6 +105,9 @@ const routes: RouteObject[] = [
           { path: "fg-receiving", element: <FGReceivingPage /> },
           { path: "putaway", element: <PutawayPage /> },
           { path: "pending", element: <PendingListPage /> },
+          { path: "po-waiting", element: <POWaitingListPage /> },
+          { path: "qc-inspection", element: <QCInspectionPage /> },
+          { path: "receipt-note", element: <ReceiptNotePage /> },
         ],
       },
       {
@@ -116,6 +142,22 @@ const routes: RouteObject[] = [
       {
         path: "accounting",
         element: <AccountingPage />,
+      },
+      {
+        path: "admin",
+        element: <AdminDashboardPage />,
+      },
+      {
+        path: "offline-queue",
+        element: <OfflineQueuePage />,
+      },
+      {
+        path: "sync-confirm",
+        element: <SyncConfirmPage />,
+      },
+      {
+        path: "traceability",
+        element: <TraceabilityPage />,
       },
     ],
   },

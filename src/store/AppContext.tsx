@@ -12,12 +12,32 @@ import {
   MOCK_OUTBOUND_DELIVERIES,
   MOCK_QUALITY_HOLDS,
   MOCK_ACTIVITY_LOGS,
-  MOCK_USERS,
+  MOCK_EXTENDED_USERS,
   MOCK_RM_RECEIPTS,
   MOCK_CYCLE_COUNTS,
   MOCK_DEFECT_CODES,
+  MOCK_FORM_TEMPLATES,
+  MOCK_FORM_INSTANCES,
+  MOCK_PURCHASE_ORDERS,
+  MOCK_QC_INSPECTIONS,
+  MOCK_MATERIAL_ISSUE_REQUESTS,
+  MOCK_BTP_REPORTS,
+  MOCK_FG_CARTON_REPORTS,
+  MOCK_FG_WAREHOUSE_REQUESTS,
+  MOCK_TEMPORARY_STOCKS,
 } from '@/mocks/extended';
-import type { MockUser } from '@/mocks/data';
+import type {
+  MockUser,
+  FormTemplate,
+  FormInstance,
+  PurchaseOrder,
+  QCInspection,
+  MaterialIssueRequest,
+  BTPReport,
+  FGCartonReport,
+  FGWarehouseRequest,
+  TemporaryStock,
+} from '@/mocks/extended';
 
 export interface Role { id: string; name: string; }
 export interface Plant { id: string; name: string; code: string; }
@@ -64,7 +84,7 @@ export interface ToastItem {
 }
 export interface OfflineQueueItem {
   queueId: string;
-  type: 'PUTAWAY' | 'QM_HOLD';
+  type: 'PUTAWAY' | 'QM_HOLD' | 'FG_RECEIVING' | 'FEFO_PICKING' | 'CYCLE_COUNT' | 'TRANSFER_ORDER' | 'RECEIVE_TRANSFER';
   user: string;
   role: string;
   plant: string;
@@ -72,11 +92,16 @@ export interface OfflineQueueItem {
   huId?: string;
   batchId?: string;
   binId?: string;
+  odId?: string;
+  transferId?: string;
   defectCode?: string;
   photos?: string[];
   reason?: string;
+  quantity?: number;
+  unit?: string;
+  additionalData?: Record<string, unknown>;
   createdAt: string;
-  status: 'Pending' | 'Syncing' | 'Synced' | 'Failed' | 'Need Review';
+  status: 'Local Saved' | 'Pending User Confirm' | 'Ready To Sync' | 'Pending Sync' | 'Syncing' | 'Synced' | 'Sync Failed' | 'Conflict' | 'Cancelled';
   retryCount: number;
   mockMovement: string;
   maxHoldHours: number;
@@ -91,7 +116,7 @@ export interface ErrorQueueItem {
   originalData: Record<string, unknown>;
   errorMessage: string;
   errorReasonVi: string;
-  status: 'Pending' | 'Resolved' | 'Cancelled' | 'Need Review';
+  status: 'Pending' | 'Resolved' | 'Cancelled' | 'Need Review' | 'Conflict';
   resolvedBy?: string;
   resolution?: string;
   resolutionTime?: string;
@@ -283,6 +308,93 @@ export const MOCK_SAP_ERRORS: ErrorQueueItem[] = [
     status: 'Pending',
     history: [{ timestamp: '2026-06-16 16:00', action: 'Tạo lỗi', user: 'Hệ thống' }],
   },
+  {
+    id: 'err-sap-011',
+    transactionCode: 'MIGO-201-FEFO-001',
+    type: 'FEFO_PICKING',
+    user: 'Trần Thị Bình',
+    role: 'Thủ kho',
+    createdAt: '2026-06-17 08:15',
+    originalData: { huId: 'HU-2026-MA-FG-TL-0008', odId: 'OD-2026-0098', batchId: '002216226' },
+    errorMessage: 'Sai FEFO — lô 002216226 không phải lô cần xuất trước',
+    errorReasonVi: 'Hệ thống SAP xác định lô 002216225 hết hạn trước và cần được xuất trước. Lô 002216226 vẫn còn hạn dài hơn. Vui lòng chọn đúng lô FEFO hoặc yêu cầu Quản đốc override.',
+    status: 'Pending',
+    history: [{ timestamp: '2026-06-17 08:15', action: 'Tạo lỗi FEFO', user: 'Hệ thống' }],
+  },
+  {
+    id: 'err-sap-012',
+    transactionCode: 'MIGO-201-FEFO-002',
+    type: 'FEFO_PICKING',
+    user: 'Trần Thị Bình',
+    role: 'Thủ kho',
+    createdAt: '2026-06-17 09:00',
+    originalData: { huId: 'HU-2026-MA-FG-XN-0005', odId: 'OD-2026-0108', batchId: '002216228' },
+    errorMessage: 'Pallet bị QM Hold — không thể picking',
+    errorReasonVi: 'Lô 002216228 đang bị QM Hold (QH-2026-0045: Rách bao bì DF-005). Tuyệt đối không được picking pallet từ lô bị khóa QC. Vui lòng liên hệ KCS/QM để mở khóa hoặc loại bỏ khỏi OD.',
+    status: 'Need Review',
+    history: [
+      { timestamp: '2026-06-17 09:00', action: 'Tạo lỗi QM Hold', user: 'Hệ thống' },
+      { timestamp: '2026-06-15 10:00', action: 'QM Hold QH-2026-0045', user: 'Lê Văn Cường' },
+    ],
+  },
+  {
+    id: 'err-sap-013',
+    transactionCode: 'MIGO-311-BIN-001',
+    type: 'PUTAWAY',
+    user: 'Trần Thị Bình',
+    role: 'Thủ kho',
+    createdAt: '2026-06-17 10:30',
+    originalData: { huId: 'HU-2026-MA-FG-XN-0007', binId: 'KL-01-A1-T2', qty: 3000 },
+    errorMessage: 'Sai bin — pallet đã được putaway vào bin khác',
+    errorReasonVi: 'Pallet HU-2026-MA-FG-XN-0007 đã tồn tại trong bin KL-01-A1-T1. Không thể putaway vào KL-01-A1-T2 vì trùng vị trí. Conflict bin location.',
+    status: 'Conflict',
+    history: [
+      { timestamp: '2026-06-17 10:30', action: 'Tạo lỗi Conflict Bin', user: 'Hệ thống' },
+      { timestamp: '2026-06-16 14:00', action: 'Đã putaway vào KL-01-A1-T1', user: 'Trần Thị Bình' },
+    ],
+  },
+  {
+    id: 'err-sap-014',
+    transactionCode: 'MIGO-101-SIGN-001',
+    type: 'FG_RECEIVING',
+    user: 'Nguyễn Văn An',
+    role: 'Công nhân sản xuất',
+    createdAt: '2026-06-17 11:00',
+    originalData: { huId: 'HU-2026-MA-FG-XN-0007', batchId: '002216225', qty: 3000 },
+    errorMessage: 'Thiếu chữ ký bắt buộc — cần chữ ký Thủ kho',
+    errorReasonVi: 'Phiếu nhập kho yêu cầu chữ ký của Thủ kho để xác nhận. Hiện chỉ có chữ ký của Công nhân SX. Vui lòng bổ sung chữ ký Thủ kho trước khi gửi SAP.',
+    status: 'Pending',
+    history: [{ timestamp: '2026-06-17 11:00', action: 'Tạo lỗi thiếu chữ ký', user: 'Hệ thống' }],
+  },
+  {
+    id: 'err-sap-015',
+    transactionCode: 'MIGO-344-PHOTO-001',
+    type: 'QM_HOLD',
+    user: 'Lê Văn Cường',
+    role: 'KCS/QM',
+    createdAt: '2026-06-17 13:00',
+    originalData: { batchId: '002216227', defectCode: 'DF-006', reason: 'Kết tinh tuyết bất thường' },
+    errorMessage: 'Thiếu ảnh bằng chứng bắt buộc cho lỗi DF-006',
+    errorReasonVi: 'Mã lỗi DF-006 (Kết tinh tuyết bất thường) yêu cầu tối thiểu 3 ảnh bằng chứng: ảnh tổng thể pallet, ảnh cận cảnh kết tinh, ảnh nhiệt kế. Hiện chưa có ảnh nào. Vui lòng bổ sung trước khi gửi.',
+    status: 'Pending',
+    history: [{ timestamp: '2026-06-17 13:00', action: 'Tạo lỗi thiếu ảnh', user: 'Hệ thống' }],
+  },
+  {
+    id: 'err-sap-016',
+    transactionCode: 'MIGO-311-CONF-001',
+    type: 'CYCLE_COUNT',
+    user: 'Trần Thị Bình',
+    role: 'Thủ kho',
+    createdAt: '2026-06-17 14:00',
+    originalData: { binId: 'KL-03-B2-T3', expectedQty: 2500, actualQty: 2000, difference: 500 },
+    errorMessage: 'Chênh lệch kiểm kê — thiếu 500 KG trong ô kệ',
+    errorReasonVi: 'Kiểm kê ô kệ KL-03-B2-T3 phát hiện chênh lệch: kỳ vọng 2,500 KG nhưng thực tế chỉ có 2,000 KG. Thiếu 500 KG. Cần xác minh nguyên nhân và tạo báo cáo chênh lệch.',
+    status: 'Need Review',
+    history: [
+      { timestamp: '2026-06-17 14:00', action: 'Tạo lỗi chênh lệch kiểm kê', user: 'Hệ thống' },
+      { timestamp: '2026-06-17 13:50', action: 'Cycle Count CC-2026-0082', user: 'Trần Thị Bình' },
+    ],
+  },
 ];
 
 // RBAC Permission Map — expanded with granular actions
@@ -352,6 +464,7 @@ export const RBAC_PERMISSIONS: Record<string, PermissionAction[]> = {
     'OUTBOUND_BTP_ISSUE', 'OUTBOUND_VIEW',
     'TRANSFER_ORDER', 'RECEIVE_TRANSFER',
     'QM_CYCLE_COUNT', 'QM_CONTAINER_CHECK', 'QM_VIEW',
+    'PRODUCTION_VIEW',
   ],
   'kcs-qm': [
     'QM_HOLD', 'QM_CYCLE_COUNT', 'QM_CONTAINER_CHECK',
@@ -378,6 +491,7 @@ export const RBAC_PERMISSIONS: Record<string, PermissionAction[]> = {
   'ke-toan-kho': [
     'VIEW_DOCUMENTS', 'VIEW_INVOICE_STATUS',
     'INBOUND_VIEW', 'OUTBOUND_VIEW', 'QM_VIEW',
+    'PRODUCTION_VIEW',
   ],
   'admin': ['ADMIN_ALL', 'ADMIN_RBAC_MATRIX'],
 };
@@ -465,7 +579,7 @@ export function getRoleHomeHint(roleId: string | undefined): { title: string; su
 }
 
 export function getOfflineAllowedActions(): PermissionAction[] {
-  return ['INBOUND_PUTAWAY', 'QM_HOLD'];
+  return ['INBOUND_PUTAWAY', 'QM_HOLD', 'INBOUND_FG_RECEIVING', 'OUTBOUND_FEFO_PICKING', 'QM_CYCLE_COUNT', 'TRANSFER_ORDER', 'RECEIVE_TRANSFER'];
 }
 
 export interface AppState {
@@ -494,6 +608,15 @@ export interface AppState {
   qualityHolds: QualityHold[];
   rawMaterialReceipts: RawMaterialReceipt[];
   cycleCounts: CycleCount[];
+  formTemplates: FormTemplate[];
+  formInstances: FormInstance[];
+  purchaseOrders: PurchaseOrder[];
+  qcInspections: QCInspection[];
+  materialIssueRequests: MaterialIssueRequest[];
+  btpReports: BTPReport[];
+  fgCartonReports: FGCartonReport[];
+  fgWarehouseRequests: FGWarehouseRequest[];
+  temporaryStocks: TemporaryStock[];
   offlineQueue: OfflineQueueItem[];
   errorQueue: ErrorQueueItem[];
   activityLogs: ActivityLog[];
@@ -506,7 +629,7 @@ export interface AppState {
   rolePermissions: Record<string, PermissionAction[]>;
 }
 
-const initialRegisteredUsers = [...MOCK_USERS];
+const initialRegisteredUsers = [...MOCK_EXTENDED_USERS];
 
 const APP_STORAGE_KEY = 'antesco_shop_floor_pwa_state_v3';
 const APP_DEVICE_KEY = 'antesco_shop_floor_device_id';
@@ -551,6 +674,15 @@ const initialState: AppState = {
   qualityHolds: MOCK_QUALITY_HOLDS,
   rawMaterialReceipts: MOCK_RM_RECEIPTS,
   cycleCounts: MOCK_CYCLE_COUNTS,
+  formTemplates: MOCK_FORM_TEMPLATES,
+  formInstances: MOCK_FORM_INSTANCES,
+  purchaseOrders: MOCK_PURCHASE_ORDERS,
+  qcInspections: MOCK_QC_INSPECTIONS,
+  materialIssueRequests: MOCK_MATERIAL_ISSUE_REQUESTS,
+  btpReports: MOCK_BTP_REPORTS,
+  fgCartonReports: MOCK_FG_CARTON_REPORTS,
+  fgWarehouseRequests: MOCK_FG_WAREHOUSE_REQUESTS,
+  temporaryStocks: MOCK_TEMPORARY_STOCKS,
   offlineQueue: [],
   errorQueue: MOCK_SAP_ERRORS,
   activityLogs: MOCK_ACTIVITY_LOGS,
@@ -725,6 +857,15 @@ function appReducer(state: AppState, action: Action): AppState {
         qualityHolds: MOCK_QUALITY_HOLDS,
         rawMaterialReceipts: MOCK_RM_RECEIPTS,
         cycleCounts: MOCK_CYCLE_COUNTS,
+        formTemplates: MOCK_FORM_TEMPLATES,
+        formInstances: MOCK_FORM_INSTANCES,
+        purchaseOrders: MOCK_PURCHASE_ORDERS,
+        qcInspections: MOCK_QC_INSPECTIONS,
+        materialIssueRequests: MOCK_MATERIAL_ISSUE_REQUESTS,
+        btpReports: MOCK_BTP_REPORTS,
+        fgCartonReports: MOCK_FG_CARTON_REPORTS,
+        fgWarehouseRequests: MOCK_FG_WAREHOUSE_REQUESTS,
+        temporaryStocks: MOCK_TEMPORARY_STOCKS,
         activityLogs: MOCK_ACTIVITY_LOGS,
         offlineQueue: [],
         errorQueue: MOCK_SAP_ERRORS,
@@ -1095,12 +1236,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [dispatch, state.currentUser, state.role?.name, state.plant?.code, addToast]);
 
   const syncOfflineQueue = useCallback(() => {
-    const queue = state.offlineQueue.filter((q) => q.status === 'Pending');
+    // CHỈ SYNC CÁC ITEMS ĐÃ ĐƯỢC USER XÁC NHẬN (Ready To Sync)
+    // Items ở trạng thái Local Saved hoặc Pending Sync cần được user xác nhận trước
+    const queue = state.offlineQueue.filter((q) => q.status === 'Ready To Sync');
     if (queue.length === 0) {
-      addToast('info', 'Không có giao dịch nào cần đồng bộ');
+      const pendingConfirm = state.offlineQueue.filter((q) => q.status === 'Local Saved' || q.status === 'Pending Sync' || q.status === 'Pending User Confirm');
+      if (pendingConfirm.length > 0) {
+        addToast('warning', `${pendingConfirm.length} giao dịch cần xác nhận trước khi đồng bộ. Vào Xác nhận đồng bộ để kiểm tra.`);
+      } else {
+        addToast('info', 'Không có giao dịch nào cần đồng bộ');
+      }
       return;
     }
 
+    // BẮT ĐẦU SYNC — Hiển thị modal
     dispatch({ type: 'SET_SHOW_SYNC_MODAL', payload: true });
     dispatch({ type: 'SET_SYNC_PROGRESS', payload: { current: 0, total: queue.length } });
 
@@ -1113,7 +1262,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         setTimeout(() => {
           if (sapErrorMode) {
-            dispatch({ type: 'UPDATE_OFFLINE_QUEUE_STATUS', payload: { queueId: item.queueId, status: 'Failed' } });
+            dispatch({ type: 'UPDATE_OFFLINE_QUEUE_STATUS', payload: { queueId: item.queueId, status: 'Sync Failed' } });
             dispatch({
               type: 'ADD_ERROR',
               payload: {
@@ -1123,7 +1272,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 user: item.user,
                 role: item.role,
                 createdAt: new Date().toISOString(),
-                originalData: { huId: item.huId, batchId: item.batchId, binId: item.binId },
+                originalData: { huId: item.huId, batchId: item.batchId, binId: item.binId, odId: item.odId, transferId: item.transferId, quantity: item.quantity },
                 errorMessage: 'SAP không phản hồi — lỗi giả lập',
                 errorReasonVi: 'Hệ thống SAP giả lập lỗi. Vui lòng kiểm tra kết nối và thử lại.',
                 status: 'Pending',
@@ -1132,34 +1281,74 @@ export function AppProvider({ children }: { children: ReactNode }) {
             });
           } else {
             dispatch({ type: 'UPDATE_OFFLINE_QUEUE_STATUS', payload: { queueId: item.queueId, status: 'Synced' } });
-
+            // Handle each type
             if (item.type === 'PUTAWAY' && item.huId && item.binId) {
               dispatch({ type: 'UPDATE_HANDLING_UNIT', payload: { id: item.huId, updates: { status: 'Đã xếp kệ', location: item.binId } } });
               dispatch({ type: 'UPDATE_BIN_STATUS', payload: { id: item.binId, status: 'Có hàng' } });
             }
             if (item.type === 'QM_HOLD' && item.batchId) {
               dispatch({ type: 'UPDATE_BATCH_STATUS', payload: { id: item.batchId, status: 'Blocked Stock' } });
+              dispatch({
+                type: 'ADD_QUALITY_HOLD',
+                payload: {
+                  id: `QH-${String(Date.now()).slice(-4)}`,
+                  batch: item.batchId,
+                  reason: `${item.defectCode || 'DF-000'}: ${item.reason?.slice(0, 80) || ''}`,
+                  plant: item.plant,
+                  status: 'Đã khóa',
+                  createdDate: new Date().toISOString().slice(0, 10),
+                },
+              });
             }
-
+            if (item.type === 'FG_RECEIVING' && item.huId) {
+              dispatch({ type: 'UPDATE_HANDLING_UNIT', payload: { id: item.huId, updates: { status: 'Chờ putaway', qty: item.quantity || 0 } } });
+            }
+            if (item.type === 'FEFO_PICKING' && item.huId && item.odId) {
+              dispatch({ type: 'UPDATE_HANDLING_UNIT', payload: { id: item.huId, updates: { status: 'Đã picking', location: '' } } });
+              dispatch({ type: 'UPDATE_OUTBOUND_DELIVERY', payload: { id: item.odId, updates: { status: 'Đang picking' } } });
+            }
+            if (item.type === 'CYCLE_COUNT' && item.binId) {
+              dispatch({
+                type: 'ADD_CYCLE_COUNT',
+                payload: {
+                  id: `CC-${String(Date.now()).slice(-4)}`,
+                  bin: item.binId,
+                  plant: item.plant,
+                  expectedPallets: (item.additionalData?.expectedPallets as number) || 0,
+                  actualPallets: (item.additionalData?.actualPallets as number) || 0,
+                  expectedQty: (item.additionalData?.expectedQty as number) || 0,
+                  actualQty: item.quantity || 0,
+                  unit: item.unit || 'KG',
+                  status: (item.additionalData?.expectedQty === item.quantity) ? 'Đã kiểm kê khớp' : 'Lệch số lượng',
+                  countedBy: item.user,
+                  note: item.reason || '',
+                  imageCount: item.photos?.length || 0,
+                  createdDate: new Date().toISOString().slice(0, 10),
+                },
+              });
+            }
+            if (item.type === 'TRANSFER_ORDER' && item.huId && item.transferId) {
+              dispatch({ type: 'UPDATE_HANDLING_UNIT', payload: { id: item.huId, updates: { status: 'Đang vận chuyển' } } });
+              dispatch({ type: 'UPDATE_TRANSFER_ORDER', payload: { id: item.transferId, updates: { status: 'Đang vận chuyển' } } });
+            }
+            if (item.type === 'RECEIVE_TRANSFER' && item.huId && item.transferId) {
+              dispatch({ type: 'UPDATE_HANDLING_UNIT', payload: { id: item.huId, updates: { status: 'Đã nhận ĐC', location: item.binId || '' } } });
+              dispatch({ type: 'UPDATE_TRANSFER_ORDER', payload: { id: item.transferId, updates: { status: 'Đã nhận' } } });
+            }
             setTimeout(() => {
               dispatch({ type: 'REMOVE_OFFLINE_QUEUE', payload: item.queueId });
             }, 500);
           }
-
           if (idx === queue.length - 1) {
             setTimeout(() => {
               dispatch({ type: 'SET_SHOW_SYNC_MODAL', payload: false });
               dispatch({ type: 'SET_SYNC_PROGRESS', payload: null });
-              dispatch({ type: 'SET_NETWORK', payload: 'online' });
               dispatch({ type: 'SET_LAST_SYNCED_AT', payload: nowIso() });
-
               const syncedCount = sapErrorMode ? 0 : queue.length;
-              const failedCount = sapErrorMode ? queue.length : 0;
-
               if (sapErrorMode) {
-                addToast('error', `Đồng bộ thất bại: ${failedCount}/${queue.length} giao dịch lỗi — đã đẩy vào Error Queue`);
+                addToast('error', `Đồng bộ thất bại: ${queue.length} giao dịch lỗi — đã đẩy vào Error Queue`);
               } else {
-                addToast('success', `Đồng bộ SAP thành công 100% (${syncedCount}/${queue.length} giao dịch)`);
+                addToast('success', `Đồng bộ SAP thành công (${syncedCount}/${queue.length} giao dịch)`);
               }
             }, 400);
           }
@@ -1168,16 +1357,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, [dispatch, state.offlineQueue, state.networkStatus, addToast]);
 
-  useEffect(() => {
-    const pendingCount = state.offlineQueue.filter((q) => q.status === 'Pending').length;
-    if (!state.isLoggedIn || state.networkStatus !== 'online' || pendingCount === 0) return;
-
-    const timer = window.setTimeout(() => {
-      syncOfflineQueue();
-    }, 900);
-
-    return () => window.clearTimeout(timer);
-  }, [state.isLoggedIn, state.networkStatus, state.offlineQueue, syncOfflineQueue]);
+  // OFFLINE RULE: Không tự động sync khi online lại.
+  // User phải chủ động vào xác nhận đồng bộ.
+  // Auto-sync đã bị vô hiệu hóa để tuân thủ quy tắc:
+  // "Offline không được phát sinh giao dịch gửi SAP/mock SAP.
+  //  Khi online lại, user phải xác nhận lại thông tin rồi mới gửi."
+  // useEffect auto-sync removed — sync only triggered manually via "Đồng bộ ngay" button.
 
   return (
     <AppContext.Provider value={{ state, dispatch, login, logout, register, changePassword, addToast, addActivityLog, simulateAction, syncOfflineQueue }}>
@@ -1192,4 +1377,4 @@ export function useApp() {
   return ctx;
 }
 
-export { MOCK_ROLES, MOCK_PLANTS, MOCK_SHIFTS, MOCK_USERS, genToastId, genActivityId, genErrorId, genOfflineId };
+export { MOCK_ROLES, MOCK_PLANTS, MOCK_SHIFTS, MOCK_EXTENDED_USERS, genToastId, genActivityId, genErrorId, genOfflineId };

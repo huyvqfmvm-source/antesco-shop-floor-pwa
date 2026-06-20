@@ -88,7 +88,7 @@ export default function PutawayPage() {
         huId: scannedPallet,
         binId: scannedBin,
         createdAt: timestamp,
-        status: 'Pending',
+        status: 'Pending Sync',
         retryCount: 0,
         mockMovement: 'MIGO-311',
         maxHoldHours: 24,
@@ -176,7 +176,7 @@ export default function PutawayPage() {
     <div className={`min-h-screen flex flex-col ${coldUI ? 'bg-black text-white' : 'bg-ant-bg'}`}>
       {/* Header */}
       <header className={`sticky top-0 z-30 px-4 py-3 flex items-center gap-3 shrink-0 ${coldUI ? 'bg-gray-900' : 'bg-ant-warning text-white'}`}>
-        <Link to="/inbound" className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${coldUI ? 'hover:bg-white/10' : 'hover:bg-white/10'}`}>
+        <Link to="/inbound" className={`no-cs-mega w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${coldUI ? 'hover:bg-white/10' : 'hover:bg-white/10'}`}>
           <i className={`ri-arrow-left-line ${coldUI ? 'text-white text-xl' : 'text-lg'}`} />
         </Link>
         <div className="flex-1 min-w-0">

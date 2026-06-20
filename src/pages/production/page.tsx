@@ -66,7 +66,7 @@ export default function ProductionPage() {
     <div className="min-h-screen bg-ant-bg flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-ant-card/95 backdrop-blur-xl border-b border-gray-100 px-4 h-14 flex items-center gap-3 shrink-0">
-        <Link to="/home" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
+        <Link to="/home" className="no-cs-mega w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
           <i className="ri-arrow-left-line text-lg text-ant-text" />
         </Link>
         <div className="flex-1 min-w-0">
@@ -169,6 +169,24 @@ export default function ProductionPage() {
 
           {/* Quick Actions */}
           <div className="flex gap-2 overflow-x-auto pb-1">
+            <button
+              onClick={() => navigate('/production/plan')}
+              className="h-11 flex items-center gap-2 px-4 rounded-2xl bg-ant-nk/10 text-ant-nk text-xs font-bold hover:bg-ant-nk/20 transition-all shrink-0 active:scale-[0.98]"
+            >
+              <div className="w-5 h-5 flex items-center justify-center">
+                <i className="ri-calendar-line text-sm" />
+              </div>
+              KH Sản xuất
+            </button>
+            <button
+              onClick={() => navigate('/production/bom-viewer')}
+              className="h-11 flex items-center gap-2 px-4 rounded-2xl bg-ant-qm/10 text-ant-qm text-xs font-bold hover:bg-ant-qm/20 transition-all shrink-0 active:scale-[0.98]"
+            >
+              <div className="w-5 h-5 flex items-center justify-center">
+                <i className="ri-file-list-3-line text-sm" />
+              </div>
+              BOM/Định mức
+            </button>
             {canCreateOrder && (
               <button
                 onClick={() => navigate('/production/detail/10000456')}
@@ -181,6 +199,42 @@ export default function ProductionPage() {
               </button>
             )}
             <button
+              onClick={() => navigate('/production/material-issue')}
+              className="h-11 flex items-center gap-2 px-4 rounded-2xl bg-ant-warning/10 text-ant-warning text-xs font-bold hover:bg-ant-warning/20 transition-all shrink-0 active:scale-[0.98]"
+            >
+              <div className="w-5 h-5 flex items-center justify-center">
+                <i className="ri-file-add-line text-sm" />
+              </div>
+              Cấp NVL
+            </button>
+            <button
+              onClick={() => navigate('/production/btp-handover')}
+              className="h-11 flex items-center gap-2 px-4 rounded-2xl bg-ant-nk/10 text-ant-nk text-xs font-bold hover:bg-ant-nk/20 transition-all shrink-0 active:scale-[0.98]"
+            >
+              <div className="w-5 h-5 flex items-center justify-center">
+                <i className="ri-swap-line text-sm" />
+              </div>
+              Bàn giao BTP
+            </button>
+            <button
+              onClick={() => navigate('/production/fg-carton-report')}
+              className="h-11 flex items-center gap-2 px-4 rounded-2xl bg-ant-xk/10 text-ant-xk text-xs font-bold hover:bg-ant-xk/20 transition-all shrink-0 active:scale-[0.98]"
+            >
+              <div className="w-5 h-5 flex items-center justify-center">
+                <i className="ri-archive-line text-sm" />
+              </div>
+              Đóng thùng TP
+            </button>
+            <button
+              onClick={() => navigate('/production/fg-warehouse-req')}
+              className="h-11 flex items-center gap-2 px-4 rounded-2xl bg-ant-sx/10 text-ant-sx text-xs font-bold hover:bg-ant-sx/20 transition-all shrink-0 active:scale-[0.98]"
+            >
+              <div className="w-5 h-5 flex items-center justify-center">
+                <i className="ri-file-pdf-line text-sm" />
+              </div>
+              NK TP BM-NM-09
+            </button>
+            <button
               onClick={() => navigate('/production/utility')}
               className="h-11 flex items-center gap-2 px-4 rounded-2xl bg-ant-offline/10 text-ant-offline text-xs font-bold hover:bg-ant-offline/20 transition-all shrink-0 active:scale-[0.98]"
             >
@@ -188,6 +242,24 @@ export default function ProductionPage() {
                 <i className="ri-plug-line text-sm" />
               </div>
               Utility Log
+            </button>
+            <button
+              onClick={() => navigate('/production/device-check')}
+              className="h-11 flex items-center gap-2 px-4 rounded-2xl bg-ant-xk/10 text-ant-xk text-xs font-bold hover:bg-ant-xk/20 transition-all shrink-0 active:scale-[0.98]"
+            >
+              <div className="w-5 h-5 flex items-center justify-center">
+                <i className="ri-tools-line text-sm" />
+              </div>
+              Kiểm tra TB
+            </button>
+            <button
+              onClick={() => navigate('/production/temperature-alerts')}
+              className="h-11 flex items-center gap-2 px-4 rounded-2xl bg-ant-warning/10 text-ant-warning text-xs font-bold hover:bg-ant-warning/20 transition-all shrink-0 active:scale-[0.98]"
+            >
+              <div className="w-5 h-5 flex items-center justify-center">
+                <i className="ri-temp-cold-line text-sm" />
+              </div>
+              Nhiệt độ kho
             </button>
           </div>
 
@@ -210,7 +282,7 @@ export default function ProductionPage() {
                   <Link
                     key={po.id}
                     to={`/production/detail/${po.id}`}
-                    className="block bg-ant-card rounded-xl border border-gray-100 p-4 active:scale-[0.99] transition-all hover:border-ant-sx/20"
+                    className="no-cs-mega block bg-ant-card rounded-xl border border-gray-100 p-4 active:scale-[0.99] transition-all hover:border-ant-sx/20"
                   >
                     {/* Top Row */}
                     <div className="flex items-start justify-between mb-2">

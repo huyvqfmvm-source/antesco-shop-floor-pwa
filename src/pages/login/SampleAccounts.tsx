@@ -1,17 +1,26 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Navigate, useNavigate, Link } from 'react-router-dom';
-import { useApp, MOCK_USERS, MOCK_ROLES, MOCK_PLANTS } from '@/store/AppContext';
+import { useApp, MOCK_EXTENDED_USERS, MOCK_ROLES, MOCK_PLANTS } from '@/store/AppContext';
 
 export default function SampleAccountsPage() {
   const { state, login, addToast } = useApp();
   const navigate = useNavigate();
   const [loggingInUser, setLoggingInUser] = useState<string | null>(null);
 
+  const visibleUsers = useMemo(() => {
+    const seen = new Set<string>();
+    return MOCK_EXTENDED_USERS.filter((user) => {
+      if (seen.has(user.role)) return false;
+      seen.add(user.role);
+      return true;
+    });
+  }, []);
+
   if (state.isLoggedIn) {
     return <Navigate to="/home" replace />;
   }
 
-  const handleLoginWithSample = async (sampleUser: typeof MOCK_USERS[0]) => {
+  const handleLoginWithSample = async (sampleUser: typeof MOCK_EXTENDED_USERS[0]) => {
     setLoggingInUser(sampleUser.username);
     await new Promise((r) => setTimeout(r, 400));
     const result = login(sampleUser.username, sampleUser.password);
@@ -57,10 +66,11 @@ export default function SampleAccountsPage() {
           <p className="text-xs text-ant-text-secondary mb-4 leading-relaxed">
             Các tài khoản mẫu với vai trò và nhà máy khác nhau dùng để kiểm thử các phân hệ. Mỗi tài khoản có vai trò và nhà máy được gán sẵn. Mật khẩu mặc định:{' '}
             <code className="px-1.5 py-0.5 rounded-md bg-gray-100 text-ant-text text-xs font-mono">123456</code>
+            {' '}(admin: <code className="px-1.5 py-0.5 rounded-md bg-gray-100 text-ant-text text-xs font-mono">admin123</code>)
           </p>
 
           <div className="space-y-2.5">
-            {MOCK_USERS.map((user) => {
+            {visibleUsers.map((user) => {
               const isLoggingIn = loggingInUser === user.username;
               const roleColor = roleColors[user.role] || 'bg-gray-100 text-gray-700 border-gray-200';
 

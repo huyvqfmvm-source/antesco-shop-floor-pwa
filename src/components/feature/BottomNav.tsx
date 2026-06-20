@@ -44,11 +44,11 @@ export default function BottomNav() {
                 <div className={`absolute top-0 left-1/4 right-1/4 h-0.5 rounded-full ${ac.indicator} animate-scale-in`} />
               )}
               {/* Icon container */}
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${isActive ? `${ac.bg} scale-105` : 'hover:bg-gray-50'}`}>
+              <div className={`cs-nav-icon-wrap w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${isActive ? `${ac.bg} scale-105` : 'hover:bg-gray-50'}`}>
                 <i className={`${item.icon} text-xl`} />
               </div>
               {/* Label */}
-              <span className={`text-[10px] font-semibold whitespace-nowrap tracking-tight ${isActive ? 'opacity-100' : 'opacity-70'}`}>
+              <span className={`cs-nav-item text-[10px] font-semibold whitespace-nowrap tracking-tight ${isActive ? 'opacity-100' : 'opacity-70'}`}>
                 {item.label}
               </span>
             </NavLink>

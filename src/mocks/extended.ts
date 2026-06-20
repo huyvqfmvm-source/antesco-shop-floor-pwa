@@ -21,7 +21,17 @@ import {
   type MockUser,
 } from './data';
 
-export { MOCK_ROLES, MOCK_PLANTS, MOCK_SHIFTS, MOCK_USERS, MOCK_SUPPLIERS, MOCK_OPERATIONS, MOCK_DEFECT_CODES };
+// Re-export new mock data modules
+export { MOCK_FORM_TEMPLATES, MOCK_FORM_INSTANCES } from './form-templates';
+export type { FormTemplate, FormTemplateField, FormInstance } from './form-templates';
+export { MOCK_ALL_MATERIAL_NORMS, MOCK_BOM_XOAI_IQF_15CM, MOCK_BOM_THANHLONG_IQF, MOCK_BOM_MIT_IQF, MOCK_BOM_XOAI_IQF_3MM, getBomByProductCode, calculateMaterialRequirements } from './material-norms';
+export type { MaterialNorm, MaterialNormItem } from './material-norms';
+export { MOCK_PURCHASE_ORDERS, MOCK_QC_INSPECTIONS, MOCK_MATERIAL_ISSUE_REQUESTS, MOCK_BTP_REPORTS, MOCK_FG_CARTON_REPORTS, MOCK_FG_WAREHOUSE_REQUESTS, MOCK_TEMPORARY_STOCKS, isSyncConfirmed } from './business-entities';
+export type { PurchaseOrder, QCInspection, MaterialIssueRequest, MaterialIssueRequestItem, BTPReport, BTPReportItem, FGCartonReport, FGWarehouseRequest, TemporaryStock, SyncQueueItem } from './business-entities';
+export { MOCK_LOSS_REASONS, getLossReasonOptions, getLossReasonByCode } from './loss-reasons';
+export type { LossReason } from './loss-reasons';
+
+export { MOCK_ROLES, MOCK_PLANTS, MOCK_SHIFTS, MOCK_SUPPLIERS, MOCK_OPERATIONS, MOCK_DEFECT_CODES };
 export type { MockUser };
 
 export const MOCK_BATCHES = [
@@ -324,3 +334,98 @@ export const MOCK_CYCLE_COUNTS = [
     createdDate: '2026-06-18',
   },
 ];
+
+export const MOCK_CONTAINER_CHECKLISTS = [
+  {
+    id: 'CHK-OD-2026-0102',
+    odId: 'OD-2026-0102',
+    container: 'TGBU1234567',
+    seal: 'SEAL-889912',
+    truckPlate: '51C-234.56',
+    checklistItems: [
+      { id: 'chk-1', label: 'Nhiệt độ container &le; -18°C', required: true, checked: false },
+      { id: 'chk-2', label: 'Seal container còn nguyên vẹn', required: true, checked: false },
+      { id: 'chk-3', label: 'Sàn container sạch, không mùi lạ', required: true, checked: false },
+      { id: 'chk-4', label: 'Đèn container hoạt động', required: false, checked: false },
+      { id: 'chk-5', label: 'Cửa container đóng kín', required: true, checked: false },
+      { id: 'chk-6', label: 'Giấy chứng nhận vệ sinh container', required: true, checked: false },
+      { id: 'chk-7', label: 'Ghi nhận nhiệt độ thực tế (°C)', required: true, checked: false },
+      { id: 'chk-8', label: 'Chụp ảnh seal trước khi cắt', required: true, checked: false },
+    ],
+    status: 'Chưa kiểm',
+    checkedBy: '',
+    checkedDate: '',
+  },
+  {
+    id: 'CHK-OD-2026-0105',
+    odId: 'OD-2026-0105',
+    container: 'MSCU9876543',
+    seal: 'SEAL-771234',
+    truckPlate: '50LD-089.12',
+    checklistItems: [
+      { id: 'chk-1', label: 'Nhiệt độ container &le; -18°C', required: true, checked: false },
+      { id: 'chk-2', label: 'Seal container còn nguyên vẹn', required: true, checked: false },
+      { id: 'chk-3', label: 'Sàn container sạch, không mùi lạ', required: true, checked: false },
+      { id: 'chk-4', label: 'Đèn container hoạt động', required: false, checked: false },
+      { id: 'chk-5', label: 'Cửa container đóng kín', required: true, checked: false },
+      { id: 'chk-6', label: 'Ghi nhận nhiệt độ thực tế (°C)', required: true, checked: false },
+      { id: 'chk-7', label: 'Chụp ảnh seal trước khi cắt', required: true, checked: false },
+    ],
+    status: 'Đã kiểm',
+    checkedBy: 'Lê Văn Cường',
+    checkedDate: '2026-06-17 14:00',
+  },
+  {
+    id: 'CHK-OD-2026-0108',
+    odId: 'OD-2026-0108',
+    container: 'OOLU1122334',
+    seal: 'SEAL-556677',
+    truckPlate: '51C-789.01',
+    checklistItems: [
+      { id: 'chk-1', label: 'Nhiệt độ container &le; -18°C', required: true, checked: true },
+      { id: 'chk-2', label: 'Seal container còn nguyên vẹn', required: true, checked: true },
+      { id: 'chk-3', label: 'Sàn container sạch, không mùi lạ', required: true, checked: true },
+      { id: 'chk-4', label: 'Đèn container hoạt động', required: false, checked: true },
+      { id: 'chk-5', label: 'Cửa container đóng kín', required: true, checked: true },
+      { id: 'chk-6', label: 'Giấy chứng nhận vệ sinh container', required: true, checked: true },
+      { id: 'chk-7', label: 'Ghi nhận nhiệt độ thực tế (°C)', required: true, checked: true },
+      { id: 'chk-8', label: 'Chụp ảnh seal trước khi cắt', required: true, checked: true },
+    ],
+    status: 'Đã kiểm',
+    checkedBy: 'Lê Văn Cường',
+    checkedDate: '2026-06-15 10:30',
+  },
+];
+
+export const MOCK_BATCHES_FULL = [
+  ...MOCK_BATCHES,
+  { id: 'FG-2026-MA-0061-166-005', product: 'TP0061 - Xoài đông IQF', qty: 5000, unit: 'KG', plant: 'MA', status: 'Unrestricted', productionOrder: '10000456' },
+  { id: 'FG-2026-MA-0042-166-006', product: 'TP0042 - Thanh long đông IQF', qty: 3200, unit: 'KG', plant: 'MA', status: 'Đã xuất', productionOrder: '10000457' },
+  { id: 'FG-2026-MA-0061-166-007', product: 'TP0061 - Xoài đông IQF', qty: 2000, unit: 'KG', plant: 'MA', status: 'Cần kiểm', productionOrder: '10000459' },
+  { id: 'FG-2026-BK-0042-167-008', product: 'TP0042 - Thanh long đông IQF', qty: 4000, unit: 'KG', plant: 'BK', status: 'Unrestricted', productionOrder: '10000460' },
+  { id: 'RM-2026-MA-MIT-165-001', product: 'Mít tươi nguyên liệu', qty: 2700, unit: 'KG', plant: 'MA', status: 'Cần kiểm', productionOrder: '' },
+  { id: 'RM-2026-BK-XOAI-166-002', product: 'Xoài cát nguyên liệu tươi', qty: 3500, unit: 'KG', plant: 'BK', status: 'Unrestricted', productionOrder: '' },
+];
+
+export const MOCK_EXTENDED_USERS: MockUser[] = [
+  { name: 'Nguyễn Văn An', username: 'an.nguyen', password: '123456', role: 'cong-nhan-san-xuat', plant: 'MA', department: 'Sản xuất', employeeCode: 'NV-001', phone: '0912 345 678' },
+  { name: 'Trần Thị Bình', username: 'binh.tran', password: '123456', role: 'thu-kho', plant: 'MA', department: 'Kho', employeeCode: 'NV-002', phone: '0912 345 679' },
+  { name: 'Lê Văn Cường', username: 'cuong.le', password: '123456', role: 'kcs-qm', plant: 'MA', department: 'QM/KCS', employeeCode: 'NV-003', phone: '0912 345 680' },
+  { name: 'Phạm Thị Dung', username: 'dung.pham', password: '123456', role: 'quan-doc', plant: 'MA', department: 'Sản xuất', employeeCode: 'NV-004', phone: '0912 345 681' },
+  { name: 'Hoàng Văn Em', username: 'em.hoang', password: '123456', role: 'ky-thuat', plant: 'BK', department: 'Kỹ thuật', employeeCode: 'NV-005', phone: '0912 345 682' },
+  { name: 'Ngô Thị Phương', username: 'phuong.ngo', password: '123456', role: 'ke-toan-kho', plant: 'MA', department: 'Kế toán kho', employeeCode: 'NV-006', phone: '0912 345 683' },
+  { name: 'Admin Hệ Thống', username: 'admin', password: 'admin123', role: 'admin', plant: 'MA', department: 'Quản trị', employeeCode: 'NV-000', phone: '0912 345 684' },
+  { name: 'Trần Văn Giang', username: 'giang.tran', password: '123456', role: 'thu-kho', plant: 'BK', department: 'Kho', employeeCode: 'NV-007', phone: '0912 345 685' },
+  { name: 'Lý Thị Hương', username: 'huong.ly', password: '123456', role: 'cong-nhan-san-xuat', plant: 'BK', department: 'Sản xuất', employeeCode: 'NV-008', phone: '0912 345 686' },
+  { name: 'Đinh Văn Khánh', username: 'khanh.dinh', password: '123456', role: 'kcs-qm', plant: 'BK', department: 'QM/KCS', employeeCode: 'NV-009', phone: '0912 345 687' },
+  { name: 'Vũ Thị Lan', username: 'lan.vu', password: '123456', role: 'quan-doc', plant: 'BK', department: 'Sản xuất', employeeCode: 'NV-010', phone: '0912 345 688' },
+  { name: 'Mai Văn Nam', username: 'nam.mai', password: '123456', role: 'ky-thuat', plant: 'MA', department: 'Kỹ thuật', employeeCode: 'NV-011', phone: '0912 345 689' },
+  { name: 'Đỗ Thị Oanh', username: 'oanh.do', password: '123456', role: 'ke-toan-kho', plant: 'BK', department: 'Kế toán kho', employeeCode: 'NV-012', phone: '0912 345 690' },
+];
+
+export const MOCK_SCAN_LOG_SUMMARY = {
+  totalScans: 15,
+  successRate: 80,
+  byCodeType: { PO: 2, HU: 4, Batch: 1, Bin: 2, OD: 1, Container: 1, Seal: 1, TruckPlate: 1, WeighSlip: 1, Device: 1 },
+  byResult: { success: 12, duplicate: 1, wrong_type: 1, wrong_code: 1 },
+};

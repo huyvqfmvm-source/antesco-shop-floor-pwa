@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useApp, MOCK_USERS, MOCK_ROLES, hasPermission, type PermissionAction } from '@/store/AppContext';
+import { useApp, MOCK_EXTENDED_USERS, MOCK_ROLES, hasPermission, type PermissionAction } from '@/store/AppContext';
 
 export interface SignedInfo {
   signerName: string;
@@ -45,7 +45,7 @@ export default function MultiRoleSignature({
   const canSign = hasPermission(currentRoleId, requiredPermission);
   const isQuanDocOrAdmin = currentRoleId === 'quan-doc' || currentRoleId === 'admin';
 
-  const eligibleAccounts = MOCK_USERS.filter((u) => {
+  const eligibleAccounts = MOCK_EXTENDED_USERS.filter((u) => {
     if (u.username === currentUsername) return false;
     if (otherSignerUsername && u.username === otherSignerUsername) return false;
     return hasPermission(u.role, requiredPermission);
@@ -67,7 +67,7 @@ export default function MultiRoleSignature({
   const handleSelectAccount = useCallback((username: string) => {
     setSelectedAccount(username);
     setPinError('');
-    const account = MOCK_USERS.find((u) => u.username === username);
+    const account = MOCK_EXTENDED_USERS.find((u) => u.username === username);
     if (account && isQuanDocOrAdmin && currentRoleId !== account.role) {
       setInviteStep('reason');
     } else {
@@ -77,7 +77,7 @@ export default function MultiRoleSignature({
 
   const handleConfirmPin = useCallback(() => {
     if (!selectedAccount) return;
-    const account = MOCK_USERS.find((u) => u.username === selectedAccount);
+    const account = MOCK_EXTENDED_USERS.find((u) => u.username === selectedAccount);
     if (!account) {
       setPinError('Tài khoản không tồn tại');
       return;
@@ -265,7 +265,7 @@ export default function MultiRoleSignature({
                 <p className="text-xs text-ant-text-secondary mb-3">
                   Nhập PIN của{' '}
                   <strong>
-                    {MOCK_USERS.find((u) => u.username === selectedAccount)?.name || selectedAccount}
+                    {MOCK_EXTENDED_USERS.find((u) => u.username === selectedAccount)?.name || selectedAccount}
                   </strong>
                 </p>
 
@@ -313,7 +313,7 @@ export default function MultiRoleSignature({
                 <p className="text-xs text-ant-text-secondary mb-3">
                   Quản đốc/Admin ký thay cho{' '}
                   <strong>
-                    {MOCK_USERS.find((u) => u.username === selectedAccount)?.name || selectedAccount}
+                    {MOCK_EXTENDED_USERS.find((u) => u.username === selectedAccount)?.name || selectedAccount}
                   </strong>
                   {' '}— bắt buộc nhập lý do
                 </p>
