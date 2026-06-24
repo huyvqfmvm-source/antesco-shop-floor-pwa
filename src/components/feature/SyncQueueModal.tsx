@@ -1,5 +1,19 @@
+import { useEffect, useRef } from 'react';
 import { useApp } from '@/store/AppContext';
 import StatusBadge from '@/components/base/StatusBadge';
+
+const TYPE_LABELS: Record<string, string> = {
+  PUTAWAY: 'Putaway',
+  QM_HOLD: 'QM Hold',
+  FG_RECEIVING: 'Nhập kho TP',
+  FEFO_PICKING: 'FEFO Picking',
+  CYCLE_COUNT: 'Kiểm kê',
+  TRANSFER_ORDER: 'Điều chuyển',
+  RECEIVE_TRANSFER: 'Nhận ĐC',
+  BTP_REPORT: 'Báo cáo BTP',
+  FG_CARTON_REPORT: 'Đóng thùng TP',
+  CONTAINER_LOADING: 'Đóng container',
+};
 
 export default function SyncQueueModal() {
   const { state } = useApp();
@@ -11,9 +25,13 @@ export default function SyncQueueModal() {
   const current = progress?.current || 0;
   const pct = total > 0 ? Math.round((current / total) * 100) : 0;
 
+  // All items shown in the list (for visibility)
   const queueItems = state.offlineQueue.filter((q) =>
     q.status === 'Pending Sync' || q.status === 'Local Saved' || q.status === 'Pending User Confirm' || q.status === 'Ready To Sync' || q.status === 'Syncing' || q.status === 'Sync Failed'
   );
+
+  // Items that are actually ready to sync (for progress counting)
+  const readyToSyncCount = state.offlineQueue.filter((q) => q.status === 'Ready To Sync').length;
 
   const getItemStatusVariant = (status: string): 'sync' | 'error' | 'success' | 'neutral' => {
     switch (status) {
@@ -29,6 +47,9 @@ export default function SyncQueueModal() {
       case 'Syncing': return 'Đang gửi';
       case 'Sync Failed': return 'Lỗi';
       case 'Synced': return 'OK';
+      case 'Local Saved': return 'Local';
+      case 'Pending User Confirm': return 'Chờ xác nhận';
+      case 'Ready To Sync': return 'Sẵn sàng';
       default: return 'Chờ';
     }
   };
@@ -41,9 +62,15 @@ export default function SyncQueueModal() {
           <i className="ri-cloud-line text-2xl text-ant-sync" />
         </div>
 
-        <h3 className="text-base font-bold text-ant-text text-center">Đang đồng bộ queue</h3>
+        <h3 className="text-base font-bold text-ant-text text-center">
+          {total > 0 ? 'Đang đồng bộ queue' : readyToSyncCount === 0 && queueItems.length > 0 ? 'Queue chờ xác nhận' : 'Đang đồng bộ queue'}
+        </h3>
         <p className="text-xs text-ant-text-secondary text-center mt-1">
-          Đang gửi {total} giao dịch lên Mock SAP
+          {total > 0
+            ? `Đang gửi ${total} giao dịch lên Mock SAP`
+            : readyToSyncCount === 0 && queueItems.length > 0
+              ? `${queueItems.length} giao dịch cần xác nhận trước khi đồng bộ`
+              : 'Đang gửi giao dịch lên Mock SAP'}
         </p>
 
         {/* Progress */}
@@ -69,6 +96,7 @@ export default function SyncQueueModal() {
                 item.status === 'Syncing' ? 'bg-ant-sync/5 border border-ant-sync/15' :
                 item.status === 'Sync Failed' ? 'bg-ant-error/5 border border-ant-error/15' :
                 item.status === 'Synced' ? 'bg-ant-sx/5 border border-ant-sx/15' :
+                item.status === 'Ready To Sync' ? 'bg-ant-sx/5 border border-ant-sx/10' :
                 'bg-gray-50'
               }`}
             >
@@ -78,12 +106,13 @@ export default function SyncQueueModal() {
                 )}
                 {item.status === 'Sync Failed' && <i className="ri-close-circle-line text-ant-error text-sm" />}
                 {item.status === 'Synced' && <i className="ri-checkbox-circle-line text-ant-sx text-sm" />}
-                {(item.status === 'Pending Sync' || item.status === 'Local Saved' || item.status === 'Pending User Confirm' || item.status === 'Ready To Sync') && <i className="ri-time-line text-ant-text-secondary text-sm" />}
+                {item.status === 'Ready To Sync' && <i className="ri-check-line text-ant-sx text-sm" />}
+                {(item.status === 'Pending Sync' || item.status === 'Local Saved' || item.status === 'Pending User Confirm') && <i className="ri-time-line text-ant-text-secondary text-sm" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-ant-text truncate">{item.mockMovement}</p>
                 <p className="text-xxs text-ant-text-secondary truncate">
-                  {item.type === 'PUTAWAY' ? 'Putaway' : item.type === 'QM_HOLD' ? 'QM Hold' : item.type === 'FG_RECEIVING' ? 'Nhập kho TP' : item.type === 'FEFO_PICKING' ? 'FEFO Picking' : item.type === 'CYCLE_COUNT' ? 'Kiểm kê' : item.type === 'TRANSFER_ORDER' ? 'Điều chuyển' : 'Nhận ĐC'} · {item.huId || item.batchId || item.binId || item.transferId}
+                  {TYPE_LABELS[item.type] || item.type} · {item.huId || item.batchId || item.binId || item.transferId || item.odId || ''}
                 </p>
               </div>
               <StatusBadge
@@ -95,7 +124,15 @@ export default function SyncQueueModal() {
           ))}
         </div>
 
-        {pct === 100 && (
+        {/* Ready to sync count indicator */}
+        {readyToSyncCount === 0 && queueItems.length > 0 && (
+          <div className="mt-4 py-2.5 rounded-xl bg-ant-warning/5 border border-ant-warning/15 flex items-center justify-center gap-2">
+            <i className="ri-alert-line text-ant-warning text-sm" />
+            <p className="text-xs font-bold text-ant-warning">{queueItems.length} giao dịch cần xác nhận trước</p>
+          </div>
+        )}
+
+        {pct === 100 && total > 0 && (
           <div className="mt-4 py-2.5 rounded-xl bg-ant-sx/5 border border-ant-sx/15 flex items-center justify-center gap-2">
             <i className="ri-check-double-line text-ant-sx text-sm" />
             <p className="text-sm font-bold text-ant-sx">Hoàn tất đồng bộ!</p>

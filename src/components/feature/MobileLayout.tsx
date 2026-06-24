@@ -8,7 +8,7 @@ import ConfirmModal from '@/components/base/ConfirmModal';
 import PermissionDenied from '@/components/base/PermissionDenied';
 import HelpDrawer from '@/components/base/HelpDrawer';
 import { Link, useLocation } from 'react-router-dom';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 
 // Map routes to required permissions for route guard
 const ROUTE_PERMISSION_MAP: Record<string, PermissionAction> = {
@@ -57,9 +57,17 @@ export default function MobileLayout() {
   // Compute pending offline queue count BEFORE early return (needed by useEffect below)
   const pendingQueueCount = state.offlineQueue.filter((q) => q.status === 'Pending Sync' || q.status === 'Local Saved' || q.status === 'Pending User Confirm' || q.status === 'Ready To Sync').length;
 
+  // Track previous network status to detect offline->online transitions
+  const prevNetworkRef = useRef<typeof state.networkStatus>(state.networkStatus);
+
   // Auto-show sync modal when coming online with pending items
   useEffect(() => {
-    if (state.isLoggedIn && state.networkStatus === 'online' && pendingQueueCount > 0) {
+    // Only auto-show sync modal when transitioning from offline to online
+    const wasOffline = prevNetworkRef.current === 'offline';
+    const isOnline = state.networkStatus === 'online';
+    prevNetworkRef.current = state.networkStatus;
+
+    if (state.isLoggedIn && wasOffline && isOnline && pendingQueueCount > 0) {
       const timer = setTimeout(() => {
         dispatch({ type: 'SET_SHOW_SYNC_MODAL', payload: true });
       }, 600);

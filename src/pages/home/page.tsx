@@ -43,6 +43,13 @@ export default function HomePage() {
 
   const handleSyncQueue = () => {
     if (queuePending === 0) { addToast('info', 'Không có giao dịch nào cần đồng bộ'); return; }
+    const readyToSync = state.offlineQueue.filter((q) => q.status === 'Ready To Sync').length;
+    if (readyToSync === 0) {
+      addToast('warning', `${queuePending} giao dịch chưa sẵn sàng đồng bộ. Vào Xác nhận đồng bộ để kiểm tra.`);
+      // Still open the modal so user can see what needs confirmation
+      dispatch({ type: 'SET_SHOW_SYNC_MODAL', payload: true });
+      return;
+    }
     syncOfflineQueue();
   };
 
